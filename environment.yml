@@ -1,0 +1,10 @@
+name: JAX
+channels:
+  - conda-forge
+  - defaults
+  - bioconda
+dependencies:
+  - python=3.12.5
+  - pandas
+  - pyensembl
+  - requests
