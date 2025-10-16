@@ -1,7 +1,10 @@
 import re
 import requests
 import pandas as pd
+from Bio import Entrez
+import xml.etree.ElementTree as ET
 
+Entrez.email = "cole.szeman@jax.org"
 ensembl_base_url = 'https://rest.ensembl.org'
 interpro_base_url = 'https://www.ebi.ac.uk/interpro/api/entry/pfam/'
 
@@ -88,6 +91,47 @@ def get_vep_data(chrom, loc, alt):
         print('VEP request failed:', e)
         return pd.DataFrame()
 
+def get_clinVar_ids(gene, loc):
+    '''
+    Use Entrez to fetch ClinVar IDs for a given gene and location.
+    '''
+    handle = Entrez.esearch(db='clinvar', term=f'{gene}[Gene Name] AND {loc}[Base Position]', retmax=500) 
+    record = Entrez.read(handle)
+    handle.close()
+    clinvar_ids = record["IdList"]
+
+    return clinvar_ids
+
+def get_disease_associations(clinvar_id):
+    handle = Entrez.efetch(db='clinvar', rettype='vcv', id=clinvar_id, from_esearch=True)
+    xml_text = handle.read()
+    handle.close()
+    clinvar_root = ET.fromstring(xml_text)
+
+    prt_changes = []
+    for prt_section in clinvar_root.findall(".//ProteinChange"):
+        prt = prt_section.text
+        prt_changes.append(prt)
+
+    for mol_cons in clinvar_root.findall(".//MolecularConsequence"):
+        try:
+            consequence = mol_cons.get("Type").replace(" ", "_")
+            break
+        except: continue
+
+    # accepted_review_status = ['practice guideline', 'reviewed by expert panel', 'criteria provided, multiple submitters, no conflicts']
+    diseases = []
+    for rcv in clinvar_root.findall(".//RCVAccession"):
+        review = rcv.find(".//ReviewStatus").text
+        # if review not in accepted_review_status:
+        #     continue
+        condition = rcv.find(".//ClassifiedCondition")
+        disease = condition.text
+        germline_description = rcv.find(".//Description")
+        submissions = germline_description.get("SubmissionCount")
+        diseases.append(f'{disease} ({submissions})')
+    
+    return prt_changes, consequence, diseases
 
 # ---- Main function ----
 def hvar_to_output(gene, chrom, loc, ref, alt, assembly='GRCh38'):
@@ -133,6 +177,26 @@ def hvar_to_output(gene, chrom, loc, ref, alt, assembly='GRCh38'):
                 'Polyphen Score', 'Molecular Consequence', 'Codon Switch', 'Amino Acids', 'refAA', 'varAA']] = vep_df[['transcript_id', 'biotype', 'exon', 'domains', 'domain_name', 'polyphen_prediction', 
                                                                                                        'polyphen_score', 'consequence_terms', 'codons', 'amino_acids', 'refAA', 'varAA']]
     
+
+    # Disease Associations
+    disease_dict = {}
+    clinvar_ids = get_clinVar_ids(gene, loc)
+    for clinvar in clinvar_ids:
+        prt_changes, consequence, diseases = get_disease_associations(clinvar)
+        for prt in prt_changes:
+            disease_dict[f'{prt}_{consequence}'] = diseases
+
+    print(disease_dict)
+
+    associated_diseases = []
+    for index, prt_row in protein_df.iterrows():
+        key = f'{prt_row['Amino Acids']}_{prt_row['Molecular Consequence']}'
+        d = disease_dict.get(key, None)
+        if d is None: associated_diseases.append(None)
+        else: associated_diseases.append('; '.join(d))
+
+    protein_df['Associated Diseases (submissions)'] = associated_diseases
+
     print(gene_df)
     print('----------')
     print(protein_df)
@@ -143,7 +207,6 @@ def hvar_to_output(gene, chrom, loc, ref, alt, assembly='GRCh38'):
     return gene_df, protein_df
 
 
-# --------- Example usage ---------
 if __name__ == '__main__':
 
     # gene = 'MACF1'
@@ -159,12 +222,3 @@ if __name__ == '__main__':
     ref = 'C'
     alt = 'T'
     assembly = 'GRCh38'
-    
-    # res = hvar_to_output(gene, chrom, loc, ref, alt, assembly)
-    # # Inspect returned DataFrames:
-    # print('--- gene_table ---')
-    # print(res['gene_table'])
-    # print('--- prt_table ---')
-    # print(res['prt_table'].head())
-    # print('--- vep summary ---')
-    # print(res['vep_df'].head())
