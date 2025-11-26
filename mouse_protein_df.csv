@@ -1,24 +1,24 @@
-transcript_id,amino_acids,protein_start,protein_end,consequence_terms,exon,domains,codons,impact,biotype,AlleleId,refAA,varAA,domain_name
-ENSMUST00000056376,R206H,206,206.0,missense_variant,6/11,PF08515,cGC/cAT,MODERATE,protein_coding,MGI:6140231,R,H,Transforming growth factor beta type I GS-motif
-ENSMUST00000090935,R206H,206,206.0,missense_variant,8/13,PF08515,cGC/cAT,MODERATE,protein_coding,MGI:6140231,R,H,Transforming growth factor beta type I GS-motif
-ENSMUST00000112599,R206H,206,206.0,missense_variant,5/10,PF08515,cGC/cAT,MODERATE,protein_coding,MGI:6140231,R,H,Transforming growth factor beta type I GS-motif
-ENSMUST00000112601,R206H,206,206.0,missense_variant,7/12,PF08515,cGC/cAT,MODERATE,protein_coding,MGI:6140231,R,H,Transforming growth factor beta type I GS-motif
-ENSMUST00000126407,nan<NA>None,,,downstream_gene_variant,,,,MODIFIER,protein_coding,MGI:6140231,nan,,
-ENSMUST00000056376,R206H,206,206.0,missense_variant,6/11,PF08515,cGc/cAc,MODERATE,protein_coding,MGI:5763014,R,H,Transforming growth factor beta type I GS-motif
-ENSMUST00000090935,R206H,206,206.0,missense_variant,8/13,PF08515,cGc/cAc,MODERATE,protein_coding,MGI:5763014,R,H,Transforming growth factor beta type I GS-motif
-ENSMUST00000112599,R206H,206,206.0,missense_variant,5/10,PF08515,cGc/cAc,MODERATE,protein_coding,MGI:5763014,R,H,Transforming growth factor beta type I GS-motif
-ENSMUST00000112601,R206H,206,206.0,missense_variant,7/12,PF08515,cGc/cAc,MODERATE,protein_coding,MGI:5763014,R,H,Transforming growth factor beta type I GS-motif
-ENSMUST00000126407,nan<NA>None,,,downstream_gene_variant,,,,MODIFIER,protein_coding,MGI:5763014,nan,,
-ENSMUST00000056376,R206H,206,206.0,missense_variant,6/11,PF08515,cGc/cAc,MODERATE,protein_coding,MGI:5471642,R,H,Transforming growth factor beta type I GS-motif
-ENSMUST00000090935,R206H,206,206.0,missense_variant,8/13,PF08515,cGc/cAc,MODERATE,protein_coding,MGI:5471642,R,H,Transforming growth factor beta type I GS-motif
-ENSMUST00000112599,R206H,206,206.0,missense_variant,5/10,PF08515,cGc/cAc,MODERATE,protein_coding,MGI:5471642,R,H,Transforming growth factor beta type I GS-motif
-ENSMUST00000112601,R206H,206,206.0,missense_variant,7/12,PF08515,cGc/cAc,MODERATE,protein_coding,MGI:5471642,R,H,Transforming growth factor beta type I GS-motif
-ENSMUST00000126407,nan<NA>None,,,downstream_gene_variant,,,,MODIFIER,protein_coding,MGI:5471642,nan,,
-ENSMUST00000056376,G328V,328,328.0,missense_variant,8/11,PF07714,gGg/gTg,MODERATE,protein_coding,MGI:6414911,G,V,Protein tyrosine and serine/threonine kinase
-ENSMUST00000090935,G328V,328,328.0,missense_variant,10/13,PF07714,gGg/gTg,MODERATE,protein_coding,MGI:6414911,G,V,Protein tyrosine and serine/threonine kinase
-ENSMUST00000112599,G328V,328,328.0,missense_variant,7/10,PF07714,gGg/gTg,MODERATE,protein_coding,MGI:6414911,G,V,Protein tyrosine and serine/threonine kinase
-ENSMUST00000112601,G328V,328,328.0,missense_variant,9/12,PF07714,gGg/gTg,MODERATE,protein_coding,MGI:6414911,G,V,Protein tyrosine and serine/threonine kinase
-ENSMUST00000056376,G328V,328,328.0,missense_variant,8/11,PF07714,gGg/gTg,MODERATE,protein_coding,MGI:6414907,G,V,Protein tyrosine and serine/threonine kinase
-ENSMUST00000090935,G328V,328,328.0,missense_variant,10/13,PF07714,gGg/gTg,MODERATE,protein_coding,MGI:6414907,G,V,Protein tyrosine and serine/threonine kinase
-ENSMUST00000112599,G328V,328,328.0,missense_variant,7/10,PF07714,gGg/gTg,MODERATE,protein_coding,MGI:6414907,G,V,Protein tyrosine and serine/threonine kinase
-ENSMUST00000112601,G328V,328,328.0,missense_variant,9/12,PF07714,gGg/gTg,MODERATE,protein_coding,MGI:6414907,G,V,Protein tyrosine and serine/threonine kinase
+AlleleId,transcript_id,biotype,exon,domains,Pfam Domain Name,consequence_terms,codons,amino_acids,refAA,varAA,primaryIdentifier,ontologyName,ontologyID
+MGI:6140231,ENSMUST00000056376,protein_coding,6/11,PF08515,Transforming growth factor beta type I GS-motif,missense_variant,cGC/cAT,R206H,R,H,MGI:6140231,fibrodysplasia ossificans progressiva,DOID:13374
+MGI:6140231,ENSMUST00000090935,protein_coding,8/13,PF08515,Transforming growth factor beta type I GS-motif,missense_variant,cGC/cAT,R206H,R,H,MGI:6140231,fibrodysplasia ossificans progressiva,DOID:13374
+MGI:6140231,ENSMUST00000112599,protein_coding,5/10,PF08515,Transforming growth factor beta type I GS-motif,missense_variant,cGC/cAT,R206H,R,H,MGI:6140231,fibrodysplasia ossificans progressiva,DOID:13374
+MGI:6140231,ENSMUST00000112601,protein_coding,7/12,PF08515,Transforming growth factor beta type I GS-motif,missense_variant,cGC/cAT,R206H,R,H,MGI:6140231,fibrodysplasia ossificans progressiva,DOID:13374
+MGI:6140231,ENSMUST00000126407,protein_coding,,PF08515,Transforming growth factor beta type I GS-motif,downstream_gene_variant,,nan<NA>None,nan,,MGI:6140231,fibrodysplasia ossificans progressiva,DOID:13374
+MGI:5763014,ENSMUST00000056376,protein_coding,6/11,PF08515,Transforming growth factor beta type I GS-motif,missense_variant,cGc/cAc,R206H,R,H,MGI:5763014,fibrodysplasia ossificans progressiva,DOID:13374
+MGI:5763014,ENSMUST00000090935,protein_coding,8/13,PF08515,Transforming growth factor beta type I GS-motif,missense_variant,cGc/cAc,R206H,R,H,MGI:5763014,fibrodysplasia ossificans progressiva,DOID:13374
+MGI:5763014,ENSMUST00000112599,protein_coding,5/10,PF08515,Transforming growth factor beta type I GS-motif,missense_variant,cGc/cAc,R206H,R,H,MGI:5763014,fibrodysplasia ossificans progressiva,DOID:13374
+MGI:5763014,ENSMUST00000112601,protein_coding,7/12,PF08515,Transforming growth factor beta type I GS-motif,missense_variant,cGc/cAc,R206H,R,H,MGI:5763014,fibrodysplasia ossificans progressiva,DOID:13374
+MGI:5763014,ENSMUST00000126407,protein_coding,,PF08515,Transforming growth factor beta type I GS-motif,downstream_gene_variant,,nan<NA>None,nan,,MGI:5763014,fibrodysplasia ossificans progressiva,DOID:13374
+MGI:5471642,ENSMUST00000056376,protein_coding,6/11,PF08515,Transforming growth factor beta type I GS-motif,missense_variant,cGc/cAc,R206H,R,H,MGI:5471642,fibrodysplasia ossificans progressiva,DOID:13374
+MGI:5471642,ENSMUST00000090935,protein_coding,8/13,PF08515,Transforming growth factor beta type I GS-motif,missense_variant,cGc/cAc,R206H,R,H,MGI:5471642,fibrodysplasia ossificans progressiva,DOID:13374
+MGI:5471642,ENSMUST00000112599,protein_coding,5/10,PF08515,Transforming growth factor beta type I GS-motif,missense_variant,cGc/cAc,R206H,R,H,MGI:5471642,fibrodysplasia ossificans progressiva,DOID:13374
+MGI:5471642,ENSMUST00000112601,protein_coding,7/12,PF08515,Transforming growth factor beta type I GS-motif,missense_variant,cGc/cAc,R206H,R,H,MGI:5471642,fibrodysplasia ossificans progressiva,DOID:13374
+MGI:5471642,ENSMUST00000126407,protein_coding,,PF08515,Transforming growth factor beta type I GS-motif,downstream_gene_variant,,nan<NA>None,nan,,MGI:5471642,fibrodysplasia ossificans progressiva,DOID:13374
+MGI:6414911,ENSMUST00000056376,protein_coding,8/11,PF07714,Protein tyrosine and serine/threonine kinase,missense_variant,gGg/gTg,G328V,G,V,MGI:6414911,fibrodysplasia ossificans progressiva,DOID:13374
+MGI:6414911,ENSMUST00000090935,protein_coding,10/13,PF07714,Protein tyrosine and serine/threonine kinase,missense_variant,gGg/gTg,G328V,G,V,MGI:6414911,fibrodysplasia ossificans progressiva,DOID:13374
+MGI:6414911,ENSMUST00000112599,protein_coding,7/10,PF07714,Protein tyrosine and serine/threonine kinase,missense_variant,gGg/gTg,G328V,G,V,MGI:6414911,fibrodysplasia ossificans progressiva,DOID:13374
+MGI:6414911,ENSMUST00000112601,protein_coding,9/12,PF07714,Protein tyrosine and serine/threonine kinase,missense_variant,gGg/gTg,G328V,G,V,MGI:6414911,fibrodysplasia ossificans progressiva,DOID:13374
+MGI:6414907,ENSMUST00000056376,protein_coding,8/11,PF07714,Protein tyrosine and serine/threonine kinase,missense_variant,gGg/gTg,G328V,G,V,MGI:6414907,fibrodysplasia ossificans progressiva,DOID:13374
+MGI:6414907,ENSMUST00000090935,protein_coding,10/13,PF07714,Protein tyrosine and serine/threonine kinase,missense_variant,gGg/gTg,G328V,G,V,MGI:6414907,fibrodysplasia ossificans progressiva,DOID:13374
+MGI:6414907,ENSMUST00000112599,protein_coding,7/10,PF07714,Protein tyrosine and serine/threonine kinase,missense_variant,gGg/gTg,G328V,G,V,MGI:6414907,fibrodysplasia ossificans progressiva,DOID:13374
+MGI:6414907,ENSMUST00000112601,protein_coding,9/12,PF07714,Protein tyrosine and serine/threonine kinase,missense_variant,gGg/gTg,G328V,G,V,MGI:6414907,fibrodysplasia ossificans progressiva,DOID:13374

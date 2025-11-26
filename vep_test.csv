@@ -1,0 +1,2 @@
+transcript_id,polyphen_prediction,polyphen_score,amino_acids,protein_start,protein_end,consequence_terms,exon,domains,codons,impact,biotype
+ENST00000434821,probably_damaging,0.999,R/H,206,206,['missense_variant'],6/11,PF08515,cGc/cAc,MODERATE,protein_coding

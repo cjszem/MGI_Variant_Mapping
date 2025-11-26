@@ -1,4 +1,5 @@
-from util import hvar_to_output, mvar_to_output
+from util import hvar_to_output, mvar_to_output, score_ortho_vars
+import pandas as pd
 
 gene = 'ACVR1'
 start = 157774114
@@ -15,5 +16,10 @@ alt = 'T'
 # alt = 'G'
 # assembly = 'GRCh38'
 
-hvar_to_output(gene, chrom, start, end, ref, alt)
-mvar_to_output(gene)
+human_gene_df, human_prt_df = hvar_to_output(gene, chrom, start, end, ref, alt)
+mouse_gene_df, mouse_prt_df = mvar_to_output(gene)
+
+# human_prt_df = pd.read_csv('hum_protein_df.csv')
+# mouse_prt_df = pd.read_csv('mouse_protein_df.csv')
+
+var_scores_df = score_ortho_vars(human_prt_df, mouse_prt_df)
