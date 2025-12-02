@@ -1,10 +1,14 @@
-name: JAX
+name: MGI_Variant_Mapping
 channels:
-  - conda-forge
   - defaults
+  - conda-forge
   - bioconda
 dependencies:
-  - python=3.12.5
+  - python=3.12
   - pandas
-  - pyensembl
+  - biopython
   - requests
+  - pip
+  - pip:
+      - pyensembl
+      - pyarrow==21.0.0

@@ -629,11 +629,4 @@ def score_ortho_vars(human_prt_df, mouse_prt_df):
     return score_df
 
 if __name__ == '__main__':
-
-    gene = 'ACVR1'
-    start = 157774114
-    end = 157774114
-    chrom = 2
-    ref = 'C'
-    alt = 'T'
-    assembly = 'GRCh38'
+    None
