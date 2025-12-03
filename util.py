@@ -92,7 +92,7 @@ def get_vep_data(chromosome, start, end, alt, species='human'):
     Use Ensembl VEP REST endpoint to get consequence data.
 
     Parameters:
-        chrom: int. Chromosome of variant.
+        chrom: str. Chromosome of variant.
         start: int. Genomic location of variant start.
         end: int. Genomic location of variant end.
         alt: string. Alternate allele
@@ -338,7 +338,7 @@ def hvar_to_output(gene, chrom, start, end, ref, alt, assembly='GRCh38'):
 
     Parameters
         gene: string. Gene symbol to extract info for.
-        chrom: int. Chromosome of variant.
+        chrom: str. Chromosome of variant.
         start: int. Genomic location of variant start.
         end: int. Genomic location of variant end.
         ref: string. Reference allele.

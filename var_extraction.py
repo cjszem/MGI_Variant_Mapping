@@ -4,7 +4,7 @@ import pandas as pd
 gene = 'ACVR1'
 start = 157774114
 end = 157774114
-chrom = 2
+chrom = '2'
 ref = 'C'
 alt = 'T'
 
