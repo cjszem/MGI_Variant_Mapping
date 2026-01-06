@@ -1,2 +1,2 @@
 Transcript ID,Biotype,Exon Rank,Pfam Domain ID,Pfam Domain Name,Polyphen Prediction,Polyphen Score,Molecular Consequence,Codon Switch,Amino Acids,refAA,varAA,Associated Diseases
-ENST00000434821,protein_coding,6/11,PF08515,Transforming growth factor beta type I GS-motif,probably_damaging,0.999,missense_variant,cGc/cAc,R206H,R,H,"Progressive myositis ossificans; not provided; Inborn genetic diseases; Epicanthus; ACVR1-related disorder; Ependymoma; Diffuse pediatric-type high-grade glioma, H3-wildtype and IDH-wildtype; Diffuse midline glioma, H3 K27M-mutant"
+ENST00000389817,protein_coding,37/39,PF00005,ABC transporter,probably_damaging,1,missense_variant,Gag/Aag,E1506K,E,K,"Hyperinsulinemic hypoglycemia, familial, 1; not provided"

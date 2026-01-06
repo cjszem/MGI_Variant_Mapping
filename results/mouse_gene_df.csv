@@ -1,2 +1,2 @@
 Organism,Gene,Description,HGNC,Ensembl ID,Biotype,Strand
-Mouse,Acvr1,"activin A receptor, type 1",MGI:87911,ENSMUSG00000026836,protein_coding,-1
+Mouse,Abcc8,"ATP-binding cassette, sub-family C member 8",MGI:1352629,ENSMUSG00000040136,protein_coding,-1

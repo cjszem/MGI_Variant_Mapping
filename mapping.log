@@ -26,6 +26,7 @@ INFO:root:Saved hum_protein_df to ./results/hum_protein_df.csv
 INFO:root:Saved mouse_gene_df to ./results/mouse_gene_df.csv
 INFO:root:Saved mouse_protein_df to ./results/mouse_protein_df.csv
 INFO:root:Saved var_scores_df to ./results/var_scores_df.csv
+
 INFO:root:Query Submitted: Gene=MACF1, Chromosome=1, Start=39468726, End=39468726, Ref=t, Alt=g
 INFO:root:Ensemble Gene Info Request: https://rest.ensembl.org/lookup/symbol/human/MACF1?content-type=application/json
 INFO:root:Ensembl VEP Request: https://rest.ensembl.org/vep/human/region/1:39468726-39468726/g?numbers=1&domains=1&pick_order=mane_select,length&pick=1
@@ -34,4 +35,169 @@ INFO:root:ClinVar ID Request: [Gene Name]=MACF1, [Base Position]=39468726
 INFO:root:ClinVar ID Request: [ClinVar ID]=586950
 INFO:root:Ensemble Gene Info Request: https://rest.ensembl.org/lookup/symbol/mouse/MACF1?content-type=application/json
 INFO:root:Ensembl VEP Request: https://rest.ensembl.org/vep/mouse/region/4:123420449-123420450/CG?numbers=1&domains=1
-ERROR:root:VEP domain request failed: there is no "domains" information in response
+WARNING:root:VEP domain failure: no "domains" information in response
+INFO:root:Query Submitted: Gene=MACF1, Chromosome=1, Start=39468726, End=39468726, Ref=t, Alt=g
+INFO:root:Ensemble Gene Info Request: https://rest.ensembl.org/lookup/symbol/human/MACF1?content-type=application/json
+INFO:root:Ensembl VEP Request: https://rest.ensembl.org/vep/human/region/1:39468726-39468726/g?numbers=1&domains=1&pick_order=mane_select,length&pick=1
+INFO:root:InterPro Request: https://www.ebi.ac.uk/interpro/api/entry/pfam/PF02187
+INFO:root:ClinVar ID Request: [Gene Name]=MACF1, [Base Position]=39468726
+INFO:root:ClinVar ID Request: [ClinVar ID]=586950
+INFO:root:Ensemble Gene Info Request: https://rest.ensembl.org/lookup/symbol/mouse/MACF1?content-type=application/json
+INFO:root:Ensembl VEP Request: https://rest.ensembl.org/vep/mouse/region/4:123420449-123420450/CG?numbers=1&domains=1
+WARNING:root:VEP domain failure: no "domains" information in response
+INFO:root:MouseMine Request: [Gene Symbol]=MACF1
+INFO:root:Query Submitted: Gene=MACF1, Chromosome=1, Start=39468726, End=39468726, Ref=t, Alt=g
+INFO:root:Ensemble Gene Info Request: https://rest.ensembl.org/lookup/symbol/human/MACF1?content-type=application/json
+INFO:root:Ensembl VEP Request: https://rest.ensembl.org/vep/human/region/1:39468726-39468726/g?numbers=1&domains=1&pick_order=mane_select,length&pick=1
+INFO:root:InterPro Request: https://www.ebi.ac.uk/interpro/api/entry/pfam/PF02187
+INFO:root:ClinVar ID Request: [Gene Name]=MACF1, [Base Position]=39468726
+INFO:root:ClinVar ID Request: [ClinVar ID]=586950
+INFO:root:Ensemble Gene Info Request: https://rest.ensembl.org/lookup/symbol/mouse/MACF1?content-type=application/json
+INFO:root:Ensembl VEP Request: https://rest.ensembl.org/vep/mouse/region/4:123420449-123420450/CG?numbers=1&domains=1
+WARNING:root:VEP domain failure: no "domains" information in response
+INFO:root:MouseMine Request: [Gene Symbol]=MACF1
+2026-01-06 14:55:17,845 - INFO - Query Submitted: Gene=MACF1, Chromosome=1, Start=39468726, End=39468726, Ref=t, Alt=g
+2026-01-06 14:55:17,846 - INFO - Ensemble Gene Info Request: https://rest.ensembl.org/lookup/symbol/human/MACF1?content-type=application/json
+2026-01-06 14:55:18,311 - INFO - Ensembl VEP Request: https://rest.ensembl.org/vep/human/region/1:39468726-39468726/g?numbers=1&domains=1&pick_order=mane_select,length&pick=1
+2026-01-06 14:55:18,977 - INFO - InterPro Request: https://www.ebi.ac.uk/interpro/api/entry/pfam/PF02187
+2026-01-06 14:55:19,474 - INFO - ClinVar ID Request: [Gene Name]=MACF1, [Base Position]=39468726
+2026-01-06 14:55:19,646 - INFO - ClinVar ID Request: [ClinVar ID]=586950
+2026-01-06 14:55:20,356 - INFO - Ensemble Gene Info Request: https://rest.ensembl.org/lookup/symbol/mouse/MACF1?content-type=application/json
+2026-01-06 14:55:20,885 - INFO - Ensembl VEP Request: https://rest.ensembl.org/vep/mouse/region/4:123420449-123420450/CG?numbers=1&domains=1
+2026-01-06 14:55:22,522 - WARNING - VEP domain failure: no "domains" information in response
+2026-01-06 14:55:22,533 - INFO - MouseMine Request: [Gene Symbol]=MACF1
+2026-01-06 14:58:48,309 - INFO - Query Submitted: Gene=MACF1, Chromosome=1, Start=39468726, End=39468726, Ref=t, Alt=g
+2026-01-06 14:58:48,309 - INFO - Ensemble Gene Info Request: https://rest.ensembl.org/lookup/symbol/human/MACF1?content-type=application/json
+2026-01-06 14:58:48,777 - INFO - Ensembl VEP Request: https://rest.ensembl.org/vep/human/region/1:39468726-39468726/g?numbers=1&domains=1&pick_order=mane_select,length&pick=1
+2026-01-06 14:58:49,782 - INFO - InterPro Request: https://www.ebi.ac.uk/interpro/api/entry/pfam/PF02187
+2026-01-06 14:58:50,271 - INFO - ClinVar ID Request: [Gene Name]=MACF1, [Base Position]=39468726
+2026-01-06 14:58:50,394 - INFO - ClinVar ID Request: [ClinVar ID]=586950
+2026-01-06 15:00:39,939 - INFO - Query Submitted: Gene=MACF1, Chromosome=1, Start=39468726, End=39468726, Ref=t, Alt=g
+2026-01-06 15:00:39,939 - INFO - Ensemble Gene Info Request: https://rest.ensembl.org/lookup/symbol/human/MACF1?content-type=application/json
+2026-01-06 15:00:40,420 - INFO - Ensembl VEP Request: https://rest.ensembl.org/vep/human/region/1:39468726-39468726/g?numbers=1&domains=1&pick_order=mane_select,length&pick=1
+2026-01-06 15:00:41,508 - INFO - InterPro Request: https://www.ebi.ac.uk/interpro/api/entry/pfam/PF02187
+2026-01-06 15:00:41,998 - INFO - ClinVar ID Request: [Gene Name]=MACF1, [Base Position]=39468726
+2026-01-06 15:00:42,119 - INFO - ClinVar ID Request: [ClinVar ID]=586950
+2026-01-06 15:03:30,051 - INFO - Query Submitted: Gene=MACF1, Chromosome=1, Start=39468726, End=39468726, Ref=t, Alt=g
+2026-01-06 15:03:30,051 - INFO - Ensemble Gene Info Request: https://rest.ensembl.org/lookup/symbol/human/MACF1?content-type=application/json
+2026-01-06 15:03:30,588 - INFO - Ensembl VEP Request: https://rest.ensembl.org/vep/human/region/1:39468726-39468726/g?numbers=1&domains=1&pick_order=mane_select,length&pick=1
+2026-01-06 15:03:31,643 - INFO - InterPro Request: https://www.ebi.ac.uk/interpro/api/entry/pfam/PF02187
+2026-01-06 15:03:32,148 - INFO - ClinVar ID Request: [Gene Name]=MACF1, [Base Position]=39468726
+2026-01-06 15:03:32,275 - INFO - ClinVar ID Request: [ClinVar ID]=586950
+2026-01-06 15:03:33,035 - INFO - Ensemble Gene Info Request: https://rest.ensembl.org/lookup/symbol/mouse/MACF1?content-type=application/json
+2026-01-06 15:03:34,261 - INFO - Ensembl VEP Request: https://rest.ensembl.org/vep/mouse/region/4:123420449-123420450/CG?numbers=1&domains=1
+2026-01-06 15:03:37,809 - WARNING - VEP domain failure: no "domains" information in response
+2026-01-06 15:03:37,824 - INFO - MouseMine Request: [Gene Symbol]=MACF1
+2026-01-06 15:06:42,759 - INFO - Query Submitted: Gene=MACF1, Chromosome=1, Start=39468726, End=39468726, Ref=t, Alt=g
+2026-01-06 15:06:42,761 - INFO - Ensemble Gene Info Request: https://rest.ensembl.org/lookup/symbol/human/MACF1?content-type=application/json
+2026-01-06 15:06:43,282 - INFO - Ensembl VEP Request: https://rest.ensembl.org/vep/human/region/1:39468726-39468726/g?numbers=1&domains=1&pick_order=mane_select,length&pick=1
+2026-01-06 15:06:44,156 - INFO - InterPro Request: https://www.ebi.ac.uk/interpro/api/entry/pfam/PF02187
+2026-01-06 15:06:44,673 - INFO - ClinVar ID Request: [Gene Name]=MACF1, [Base Position]=39468726
+2026-01-06 15:06:44,804 - INFO - ClinVar ID Request: [ClinVar ID]=586950
+2026-01-06 15:06:45,878 - INFO - Ensemble Gene Info Request: https://rest.ensembl.org/lookup/symbol/mouse/MACF1?content-type=application/json
+2026-01-06 15:06:46,748 - INFO - Ensembl VEP Request: https://rest.ensembl.org/vep/mouse/region/4:123420449-123420450/CG?numbers=1&domains=1
+2026-01-06 15:06:55,868 - WARNING - VEP domain failure: no "domains" information in response
+2026-01-06 15:06:55,870 - WARNING - VEP domain failure: no pfam database in response
+2026-01-06 15:06:55,882 - INFO - MouseMine Request: [Gene Symbol]=MACF1
+2026-01-06 15:12:47,893 - INFO - Query Submitted: Gene=MACF1, Chromosome=1, Start=39468726, End=39468726, Ref=t, Alt=g
+2026-01-06 15:12:47,896 - INFO - Ensemble Gene Info Request: https://rest.ensembl.org/lookup/symbol/human/MACF1?content-type=application/json
+2026-01-06 15:12:48,539 - INFO - Ensembl VEP Request: https://rest.ensembl.org/vep/human/region/1:39468726-39468726/g?numbers=1&domains=1&pick_order=mane_select,length&pick=1
+2026-01-06 15:12:49,328 - INFO - InterPro Request: https://www.ebi.ac.uk/interpro/api/entry/pfam/PF02187
+2026-01-06 15:12:49,846 - INFO - ClinVar ID Request: [Gene Name]=MACF1, [Base Position]=39468726
+2026-01-06 15:12:50,035 - INFO - ClinVar ID Request: [ClinVar ID]=586950
+2026-01-06 15:12:50,724 - INFO - Ensemble Gene Info Request: https://rest.ensembl.org/lookup/symbol/mouse/MACF1?content-type=application/json
+2026-01-06 15:12:51,305 - INFO - Ensembl VEP Request: https://rest.ensembl.org/vep/mouse/region/4:123420449-123420450/CG?numbers=1&domains=1
+2026-01-06 15:12:53,827 - WARNING - VEP domain failure: no "domains" information in response
+2026-01-06 15:12:53,844 - INFO - MouseMine Request: [Gene Symbol]=MACF1
+2026-01-06 15:15:29,331 - INFO - Query Submitted: Gene=MACF1, Chromosome=1, Start=39468726, End=39468726, Ref=t, Alt=g
+2026-01-06 15:15:29,342 - INFO - Ensemble Gene Info Request: https://rest.ensembl.org/lookup/symbol/human/MACF1?content-type=application/json
+2026-01-06 15:15:29,833 - INFO - Ensembl VEP Request: https://rest.ensembl.org/vep/human/region/1:39468726-39468726/g?numbers=1&domains=1&pick_order=mane_select,length&pick=1
+2026-01-06 15:15:30,809 - INFO - InterPro Request: https://www.ebi.ac.uk/interpro/api/entry/pfam/PF02187
+2026-01-06 15:15:31,338 - INFO - ClinVar ID Request: [Gene Name]=MACF1, [Base Position]=39468726
+2026-01-06 15:15:31,479 - INFO - ClinVar ID Request: [ClinVar ID]=586950
+2026-01-06 15:15:32,415 - INFO - Ensemble Gene Info Request: https://rest.ensembl.org/lookup/symbol/mouse/MACF1?content-type=application/json
+2026-01-06 15:15:33,362 - INFO - Ensembl VEP Request: https://rest.ensembl.org/vep/mouse/region/4:123420449-123420450/CG?numbers=1&domains=1
+2026-01-06 15:15:37,614 - WARNING - VEP domain failure: no "domains" information in response
+2026-01-06 15:15:37,629 - INFO - MouseMine Request: [Gene Symbol]=MACF1
+2026-01-06 15:15:37,720 - INFO - OLS Request: https://www.ebi.ac.uk/ols4/api/search?q=Lissencephaly with decussation defect&ontology=doid&exact=true
+2026-01-06 15:15:38,168 - INFO - OLS Request: https://www.ebi.ac.uk/ols4/api/search?q=Lissencephaly 9 with complex brainstem malformation&ontology=doid&exact=true
+2026-01-06 15:15:38,704 - INFO - OLS Request: https://www.ebi.ac.uk/ols4/api/search?q=lissencephaly with brainstem hypoplasia&ontology=doid&exact=true
+2026-01-06 15:15:39,182 - INFO - Saved hum_gene_df to ./results/hum_gene_df.csv
+2026-01-06 15:15:39,184 - INFO - Saved hum_protein_df to ./results/hum_protein_df.csv
+2026-01-06 15:15:39,185 - INFO - Saved mouse_gene_df to ./results/mouse_gene_df.csv
+2026-01-06 15:15:39,186 - INFO - Saved mouse_protein_df to ./results/mouse_protein_df.csv
+2026-01-06 15:15:39,186 - INFO - Saved var_scores_df to ./results/var_scores_df.csv
+2026-01-06 15:16:08,763 - INFO - Query Submitted: Gene=ACVR1, Chromosome=2, Start=157774114, End=157774114, Ref=C, Alt=T
+2026-01-06 15:16:08,765 - INFO - Ensemble Gene Info Request: https://rest.ensembl.org/lookup/symbol/human/ACVR1?content-type=application/json
+2026-01-06 15:16:09,304 - INFO - Ensembl VEP Request: https://rest.ensembl.org/vep/human/region/2:157774114-157774114/T?numbers=1&domains=1&pick_order=mane_select,length&pick=1
+2026-01-06 15:16:10,047 - INFO - InterPro Request: https://www.ebi.ac.uk/interpro/api/entry/pfam/PF08515
+2026-01-06 15:16:10,521 - INFO - ClinVar ID Request: [Gene Name]=ACVR1, [Base Position]=157774114
+2026-01-06 15:16:10,659 - INFO - ClinVar ID Request: [ClinVar ID]=18309
+2026-01-06 15:16:11,485 - INFO - Ensemble Gene Info Request: https://rest.ensembl.org/lookup/symbol/mouse/ACVR1?content-type=application/json
+2026-01-06 15:16:12,223 - INFO - Ensembl VEP Request: https://rest.ensembl.org/vep/mouse/region/2:58364210-58364211/AT?numbers=1&domains=1
+2026-01-06 15:16:14,681 - INFO - Ensembl VEP Request: https://rest.ensembl.org/vep/mouse/region/2:58364211-58364211/T?numbers=1&domains=1
+2026-01-06 15:16:15,454 - INFO - Ensembl VEP Request: https://rest.ensembl.org/vep/mouse/region/2:58364211-58364211/T?numbers=1&domains=1
+2026-01-06 15:16:16,178 - INFO - Ensembl VEP Request: https://rest.ensembl.org/vep/mouse/region/2:58352976-58352976/A?numbers=1&domains=1
+2026-01-06 15:16:16,948 - INFO - Ensembl VEP Request: https://rest.ensembl.org/vep/mouse/region/2:58352976-58352976/A?numbers=1&domains=1
+2026-01-06 15:16:19,372 - INFO - InterPro Request: https://www.ebi.ac.uk/interpro/api/entry/pfam/PF08515
+2026-01-06 15:16:19,838 - INFO - InterPro Request: https://www.ebi.ac.uk/interpro/api/entry/pfam/PF07714
+2026-01-06 15:16:20,692 - INFO - MouseMine Request: [Gene Symbol]=ACVR1
+2026-01-06 15:16:20,807 - INFO - OLS Request: https://www.ebi.ac.uk/ols4/api/search?q=Progressive myositis ossificans&ontology=doid&exact=true
+2026-01-06 15:16:21,261 - INFO - OLS Request: https://www.ebi.ac.uk/ols4/api/search?q=not provided&ontology=doid&exact=true
+2026-01-06 15:16:21,729 - INFO - OLS Request: https://www.ebi.ac.uk/ols4/api/search?q=Inborn genetic diseases&ontology=doid&exact=true
+2026-01-06 15:16:22,234 - INFO - OLS Request: https://www.ebi.ac.uk/ols4/api/search?q=Epicanthus&ontology=doid&exact=true
+2026-01-06 15:16:22,700 - INFO - OLS Request: https://www.ebi.ac.uk/ols4/api/search?q=ACVR1-related disorder&ontology=doid&exact=true
+2026-01-06 15:16:23,171 - INFO - OLS Request: https://www.ebi.ac.uk/ols4/api/search?q=Ependymoma&ontology=doid&exact=true
+2026-01-06 15:16:23,687 - INFO - OLS Request: https://www.ebi.ac.uk/ols4/api/search?q=Diffuse pediatric-type high-grade glioma, H3-wildtype and IDH-wildtype&ontology=doid&exact=true
+2026-01-06 15:16:24,161 - INFO - OLS Request: https://www.ebi.ac.uk/ols4/api/search?q=Diffuse midline glioma, H3 K27M-mutant&ontology=doid&exact=true
+2026-01-06 15:16:24,646 - INFO - Saved hum_gene_df to ./results/hum_gene_df.csv
+2026-01-06 15:16:24,650 - INFO - Saved hum_protein_df to ./results/hum_protein_df.csv
+2026-01-06 15:16:24,651 - INFO - Saved mouse_gene_df to ./results/mouse_gene_df.csv
+2026-01-06 15:16:24,652 - INFO - Saved mouse_protein_df to ./results/mouse_protein_df.csv
+2026-01-06 15:16:24,653 - INFO - Saved var_scores_df to ./results/var_scores_df.csv
+2026-01-06 15:25:57,495 - INFO - Query Submitted: Gene=ACVR1, Chromosome=2, Start=157774114, End=157774114, Ref=C, Alt=T
+2026-01-06 15:25:57,497 - INFO - Ensemble Gene Info Request: https://rest.ensembl.org/lookup/symbol/human/ACVR1?content-type=application/json
+2026-01-06 15:25:58,069 - INFO - Ensembl VEP Request: https://rest.ensembl.org/vep/human/region/2:157774114-157774114/T?numbers=1&domains=1&pick_order=mane_select,length&pick=1
+2026-01-06 15:25:58,826 - INFO - InterPro Request: https://www.ebi.ac.uk/interpro/api/entry/pfam/PF08515
+2026-01-06 15:25:59,338 - INFO - ClinVar ID Request: [Gene Name]=ACVR1, [Base Position]=157774114
+2026-01-06 15:25:59,479 - INFO - ClinVar ID Request: [ClinVar ID]=18309
+2026-01-06 15:26:00,300 - INFO - Ensemble Gene Info Request: https://rest.ensembl.org/lookup/symbol/mouse/ACVR1?content-type=application/json
+2026-01-06 15:26:00,835 - INFO - Ensembl VEP Request: https://rest.ensembl.org/vep/mouse/region/2:58364210-58364211/AT?numbers=1&domains=1
+2026-01-06 15:26:02,202 - INFO - Ensembl VEP Request: https://rest.ensembl.org/vep/mouse/region/2:58364211-58364211/T?numbers=1&domains=1
+2026-01-06 15:26:03,070 - INFO - Ensembl VEP Request: https://rest.ensembl.org/vep/mouse/region/2:58364211-58364211/T?numbers=1&domains=1
+2026-01-06 15:26:04,351 - INFO - Ensembl VEP Request: https://rest.ensembl.org/vep/mouse/region/2:58352976-58352976/A?numbers=1&domains=1
+2026-01-06 15:26:05,372 - INFO - Ensembl VEP Request: https://rest.ensembl.org/vep/mouse/region/2:58352976-58352976/A?numbers=1&domains=1
+2026-01-06 15:26:06,745 - INFO - InterPro Request: https://www.ebi.ac.uk/interpro/api/entry/pfam/PF08515
+2026-01-06 15:26:07,207 - INFO - InterPro Request: https://www.ebi.ac.uk/interpro/api/entry/pfam/PF07714
+2026-01-06 15:26:08,056 - INFO - MouseMine Request: [Gene Symbol]=ACVR1
+2026-01-06 15:26:08,164 - INFO - OLS Request: https://www.ebi.ac.uk/ols4/api/search?q=Progressive myositis ossificans&ontology=doid&exact=true
+2026-01-06 15:26:08,618 - INFO - OLS Request: https://www.ebi.ac.uk/ols4/api/search?q=not provided&ontology=doid&exact=true
+2026-01-06 15:26:09,111 - INFO - OLS Request: https://www.ebi.ac.uk/ols4/api/search?q=Inborn genetic diseases&ontology=doid&exact=true
+2026-01-06 15:26:09,574 - INFO - OLS Request: https://www.ebi.ac.uk/ols4/api/search?q=Epicanthus&ontology=doid&exact=true
+2026-01-06 15:26:10,065 - INFO - OLS Request: https://www.ebi.ac.uk/ols4/api/search?q=ACVR1-related disorder&ontology=doid&exact=true
+2026-01-06 15:26:10,525 - INFO - OLS Request: https://www.ebi.ac.uk/ols4/api/search?q=Ependymoma&ontology=doid&exact=true
+2026-01-06 15:26:11,008 - INFO - OLS Request: https://www.ebi.ac.uk/ols4/api/search?q=Diffuse pediatric-type high-grade glioma, H3-wildtype and IDH-wildtype&ontology=doid&exact=true
+2026-01-06 15:26:11,470 - INFO - OLS Request: https://www.ebi.ac.uk/ols4/api/search?q=Diffuse midline glioma, H3 K27M-mutant&ontology=doid&exact=true
+2026-01-06 15:26:11,970 - INFO - Saved hum_gene_df to ./results/hum_gene_df.csv
+2026-01-06 15:26:11,971 - INFO - Saved hum_protein_df to ./results/hum_protein_df.csv
+2026-01-06 15:26:11,971 - INFO - Saved mouse_gene_df to ./results/mouse_gene_df.csv
+2026-01-06 15:26:11,972 - INFO - Saved mouse_protein_df to ./results/mouse_protein_df.csv
+2026-01-06 15:26:11,972 - INFO - Saved var_scores_df to ./results/var_scores_df.csv
+2026-01-06 15:26:45,455 - INFO - Query Submitted: Gene=ABCC8, Chromosome=11, Start=17394295, End=17394295, Ref=C, Alt=T
+2026-01-06 15:26:45,456 - INFO - Ensemble Gene Info Request: https://rest.ensembl.org/lookup/symbol/human/ABCC8?content-type=application/json
+2026-01-06 15:26:45,939 - INFO - Ensembl VEP Request: https://rest.ensembl.org/vep/human/region/11:17394295-17394295/T?numbers=1&domains=1&pick_order=mane_select,length&pick=1
+2026-01-06 15:26:46,885 - INFO - InterPro Request: https://www.ebi.ac.uk/interpro/api/entry/pfam/PF00005
+2026-01-06 15:26:47,926 - INFO - ClinVar ID Request: [Gene Name]=ABCC8, [Base Position]=17394295
+2026-01-06 15:26:48,165 - INFO - ClinVar ID Request: [ClinVar ID]=4537897
+2026-01-06 15:26:48,848 - INFO - ClinVar ID Request: [ClinVar ID]=9097
+2026-01-06 15:26:49,283 - INFO - Ensemble Gene Info Request: https://rest.ensembl.org/lookup/symbol/mouse/ABCC8?content-type=application/json
+2026-01-06 15:26:49,997 - INFO - Ensembl VEP Request: https://rest.ensembl.org/vep/mouse/region/7:45755262-45755262/T?numbers=1&domains=1
+2026-01-06 15:26:52,537 - INFO - InterPro Request: https://www.ebi.ac.uk/interpro/api/entry/pfam/PF00005
+2026-01-06 15:26:53,505 - INFO - MouseMine Request: [Gene Symbol]=ABCC8
+2026-01-06 15:26:53,693 - INFO - OLS Request: https://www.ebi.ac.uk/ols4/api/search?q=Hyperinsulinemic hypoglycemia, familial, 1&ontology=doid&exact=true
+2026-01-06 15:26:54,176 - INFO - OLS Request: https://www.ebi.ac.uk/ols4/api/search?q=not provided&ontology=doid&exact=true
+2026-01-06 15:26:54,710 - INFO - Saved hum_gene_df to ./results/hum_gene_df.csv
+2026-01-06 15:26:54,711 - INFO - Saved hum_protein_df to ./results/hum_protein_df.csv
+2026-01-06 15:26:54,712 - INFO - Saved mouse_gene_df to ./results/mouse_gene_df.csv
+2026-01-06 15:26:54,713 - INFO - Saved mouse_protein_df to ./results/mouse_protein_df.csv
+2026-01-06 15:26:54,713 - INFO - Saved var_scores_df to ./results/var_scores_df.csv

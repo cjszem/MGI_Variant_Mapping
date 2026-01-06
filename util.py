@@ -74,41 +74,6 @@ def get_gene_info(gene, species='human'):
 
     return gene_info
 
-def get_domain_name(pfam_domain_id):
-    '''
-    Query InterPro Pfam database to get domain name.
-
-    Parameters:
-        pfam_domain_id: string. Pfam domain ID to extract full name for.
-
-    Returns:
-        string. The corresponding long name for given domain ID.
-    '''
-    # Construct URL
-    url = interpro_base_url + pfam_domain_id
-    headers = {'Accept': 'application/json'}
-
-    # Log InterPro request
-    logging.info(f'InterPro Request: {url}')
-
-    try:
-        # Make request to InterPro REST API
-        r = requests.get(url, headers=headers, timeout=10)
-        r.raise_for_status()
-        json = r.json()
-
-        # Extract domain long name
-        metadata = json['metadata']
-        long_name = metadata['name'].get('name') or metadata['name'].get('value')
-
-        # Return domain long name
-        return long_name
-    
-    # Return None if the request fails
-    except Exception:
-        logging.error(f'InterPro Request Failed: {url}')
-        return None
-
 def get_vep_data(chromosome, start, end, alt, species='human'):
     '''
     Use Ensembl VEP REST endpoint to get consequence data.
@@ -165,21 +130,22 @@ def get_vep_data(chromosome, start, end, alt, species='human'):
         vep_df = vep_df[[col for col in keep if col in vep_df.columns]]
         
         # Extract pfam names from dictionary of domain names and databases
+        pfam = None
+
         if 'domains' in vep_df.columns: 
             for domain in vep_df['domains'][0]:
                 if isinstance(domain, dict) and domain.get('db') == 'Pfam':
-                    pfam = domain['name']
+                    pfam = domain.get('name')
                     break
+            
+            if pfam is None:
+                logging.warning('VEP domain failure: no pfam database in response')
 
         else:
-            logging.error('VEP domain request failed: there is no "domains" information in response')
-            pfam = None
+            logging.warning('VEP domain failure: no "domains" information in response')
 
-        try:
-            vep_df['domains'] = pfam
-        except:
-            logging.error('VEP domain request failed: there is no pfam domain in response')
-            vep_df['domains'] = None
+        vep_df['domains'] = pfam
+        vep_df.rename(columns={'domains': 'Domain'}, inplace=True)
 
         # Return VEP DataFrame
         return vep_df
@@ -188,6 +154,41 @@ def get_vep_data(chromosome, start, end, alt, species='human'):
     except Exception as e:
         logging.error('VEP request failed:', e)
         return pd.DataFrame()
+
+def get_domain_name(pfam_domain_id):
+    '''
+    Query InterPro Pfam database to get domain name.
+
+    Parameters:
+        pfam_domain_id: string. Pfam domain ID to extract full name for.
+
+    Returns:
+        string. The corresponding long name for given domain ID.
+    '''
+    # Construct URL
+    url = interpro_base_url + pfam_domain_id
+    headers = {'Accept': 'application/json'}
+
+    # Log InterPro request
+    logging.info(f'InterPro Request: {url}')
+
+    try:
+        # Make request to InterPro REST API
+        r = requests.get(url, headers=headers, timeout=10)
+        r.raise_for_status()
+        json = r.json()
+
+        # Extract domain long name
+        metadata = json['metadata']
+        long_name = metadata['name'].get('name') or metadata['name'].get('value')
+
+        # Return domain long name
+        return long_name
+    
+    # Return None if the request fails
+    except Exception:
+        logging.error(f'InterPro Request Failed: {url}')
+        return None
 
 def get_clinvar_ids(gene, start):
     '''
@@ -484,24 +485,31 @@ def hvar_to_output(gene, chrom, start, end, ref, alt, assembly='GRCh38'):
 
 
     # Fetch domain names
-    for domain in vep_df['domains'].unique():
-        dom_name = get_domain_name(domain)
-        vep_df.loc[vep_df['domains'] == domain, 'domain_name'] = dom_name
+    for domain in vep_df['Domain'].unique():
+        if domain == None:
+            dom_name = None
+        else:
+            dom_name = get_domain_name(domain)
+        vep_df.loc[vep_df['Domain'] == domain, 'domain_name'] = dom_name
 
     
     # Create protein DataFrame
-    protein_df = pd.DataFrame()
-    old_cols = ['transcript_id', 'biotype', 'exon', 'domains', 'domain_name', 'polyphen_prediction', 
-                'polyphen_score', 'consequence_terms', 'codons', 'amino_acids', 'refAA', 'varAA'] # Column names in vep_df
-    new_cols = ['Transcript ID', 'Biotype', 'Exon Rank', 'Pfam Domain ID', 'Pfam Domain Name', 'Polyphen Prediction', 
-                'Polyphen Score', 'Molecular Consequence', 'Codon Switch', 'Amino Acids', 'refAA', 'varAA'] # Corresponding column names for protein_df
-    protein_df[new_cols] = vep_df[old_cols] # Update column names
-    
+    keep = ['transcript_id', 'biotype', 'exon', 'Domain', 'domain_name', 'polyphen_prediction', 
+                'polyphen_score', 'consequence_terms', 'codons', 'amino_acids', 'refAA', 'varAA']
+    protein_df = vep_df[keep]
+
+    # Update column names
+    protein_df.rename(columns={'transcript_id': 'Transcript ID', 'biotype': 'Biotype', 
+                       'exon': 'Exon Rank', 'Domain': 'Pfam Domain ID', 
+                       'domain_name': 'Pfam Domain Name', 'polyphen_prediction': 'Polyphen Prediction', 
+                       'polyphen_score': 'Polyphen Score', 'consequence_terms': 'Molecular Consequence', 
+                       'codons': 'Codon Switch', 'amino_acids': 'Amino Acids', 
+                       'refAA': 'refAA', 'varAA': 'varAA'}, inplace=True)
 
     # Disease Associations
     clinvar_ids = get_clinvar_ids(gene, start)
 
-    # Build lookup dictionary of protein cahnge and consequence to diseases
+    # Build lookup dictionary of protein change and consequence to diseases
     disease_dict = {}
     for clinvar in clinvar_ids: # for each ClinVar ID
         prt_changes, consequence, diseases = get_disease_associations(clinvar) # extract the protein information and diseases
@@ -612,21 +620,24 @@ def mvar_to_output(gene, assembly='GRCm39'):
 
 
     # Fetch domain names
-    for domain in mouse_prt_df['domains'].unique():
-        dom_name = get_domain_name(domain)
-        mouse_prt_df.loc[mouse_prt_df['domains'] == domain, 'Pfam Domain Name'] = dom_name
+    for domain in mouse_prt_df['Domain'].unique():
+        if domain == None:
+            dom_name = None
+        else:
+            dom_name = get_domain_name(domain)
+        mouse_prt_df.loc[mouse_prt_df['Domain'] == domain, 'Pfam Domain Name'] = dom_name
 
 
     # Rearrange and rename columns
     mouse_prt_df = mouse_prt_df[['AlleleID', 'AlleleSymbol', 'transcript_id', 'biotype', 
-                                 'exon', 'domains', 'Pfam Domain Name', 
+                                 'exon', 'Domain', 'Pfam Domain Name', 
                                  'consequence_terms', 'codons', 'amino_acids', 
                                  'refAA', 'varAA']]
     
     mouse_prt_df.rename(columns={'transcript_id': 'Transcript ID', 'biotype': 'Biotype', 
-                                 'exon': 'Exon Rank', 'domains': 'Pfam Domain ID', 
+                                 'exon': 'Exon Rank', 'Domain': 'Pfam Domain ID', 
                                  'consequence_terms': 'Molecular Consequence', 
-                                 'codons': 'Codon Switch', 'amino_acids': 'Amino Acids'})
+                                 'codons': 'Codon Switch', 'amino_acids': 'Amino Acids'}, inplace=True)
 
 
     # Query MouseMine for ontology associations
@@ -664,7 +675,6 @@ def score_ortho_vars(human_gene_df, human_prt_df, mouse_gene_df, mouse_prt_df):
     Returns:
         pandas.DataFrame. Containing boolean match columns and total score for each mouse allele
     '''
-
     # Extract human variant features
     biotype = human_prt_df['Biotype'][0]
     exon_rank = human_prt_df['Exon Rank'][0]
@@ -680,47 +690,41 @@ def score_ortho_vars(human_gene_df, human_prt_df, mouse_gene_df, mouse_prt_df):
         doid = get_doid_name(disease)
         if doid:
             diseases_doid.append(doid['label']) # append disease name if found
+    
+    # Create boolean score dataframe
+    score_df = pd.DataFrame()
+    score_df['AlleleID'] = mouse_prt_df['AlleleID']
+    score_df['AlleleSymbol'] = mouse_prt_df['AlleleSymbol']
+    score_df['Transcript ID'] = mouse_prt_df['Transcript ID']
+    score_df['biotype_match'] = mouse_prt_df['Biotype'].apply(lambda x: x == biotype)
+    score_df['consequence_match'] = mouse_prt_df['Molecular Consequence'].apply(lambda x: x == consequence)
+    score_df['AA_match'] = mouse_prt_df['Amino Acids'].apply(lambda x: x == amino_acids)
+    score_df['exon_match'] = mouse_prt_df['Exon Rank'].apply(lambda x: x == exon_rank)
+    score_df['domain_match'] = mouse_prt_df['Pfam Domain ID'].apply(lambda x: (x == domain) if (x is not None and domain is not None) else None)
+    score_df['disease_match'] = mouse_prt_df['ontologyName'].apply(lambda x: x in diseases_doid)
 
-    # Score each mouse variant against human
-    score_rows = []
-    for idx, mouse_prt in mouse_prt_df.iterrows():
-        allele_id = mouse_prt['AlleleID']
-        allele_symbol = mouse_prt['AlleleSymbol']
-        trx_id = mouse_prt['transcript_id']
-        match_biotype = mouse_prt['biotype'] == biotype
-        match_exon = mouse_prt['exon'] == exon_rank
-        match_domain = mouse_prt['domains'] == domain
-        match_consequence = mouse_prt['consequence_terms'] == consequence
-        match_AA = mouse_prt['amino_acids'] == amino_acids
-        match_disease = mouse_prt['ontologyName'] in diseases_doid
+    # Calculate total score - percentage
+    def calculate_score(row):
 
-        # Calculate total score (precentage of passed checks)
-        total_score = sum([match_biotype,
-                           match_exon,
-                           match_domain,
-                           match_consequence,
-                           match_AA,
-                           match_disease]) / 6 * 100
+        # Filter out None values - if missing domain information
+        valid_matches = [v for v in row[['biotype_match', 'consequence_match', 'AA_match', 'exon_match', 'domain_match', 'disease_match']] if isinstance(v, bool)]
+        
+        # Calculate precentage of hits
+        score = sum(valid_matches)
+        percentage = (score / len(valid_matches)) * 100
+        
+        return percentage
 
-        # Append score row
-        score_rows.append({'AlleleID': allele_id,
-                           'AlleleSymbol': allele_symbol,
-                           'transcript_id': trx_id,
-                           'biotype_match': match_biotype,
-                           'exon_match': match_exon,
-                           'domain_match': match_domain,
-                           'consequence_match': match_consequence,
-                           'AA_match': match_AA,
-                           'disease_match': match_disease,
-                           'total_score': total_score})
+    # Add score column
+    score_df['total_score'] = score_df.apply(calculate_score, axis=1)
 
-    # Create and display score DataFrame
-    score_df = pd.DataFrame(score_rows)
+    # Sort results by score
     score_df = score_df.sort_values(by='total_score', ascending=False)
 
     print(score_df)
     print('----------')
 
+    # Log and save results
     log_results(human_gene_df, human_prt_df, mouse_gene_df, mouse_prt_df, score_df)
 
     return score_df
