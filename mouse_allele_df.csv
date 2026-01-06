@@ -1,6 +1,0 @@
-Gene,AlleleId,Chromosome,Start,End,Ref,Alt,Molecular Consequence
-Acvr1,MGI:6140231,2,58364210,58364211,GC,AT,missense_variant
-Acvr1,MGI:5763014,2,58364211,58364211,C,T,missense_variant
-Acvr1,MGI:5471642,2,58364211,58364211,C,T,missense_variant
-Acvr1,MGI:6414911,2,58352976,58352976,C,A,missense_variant
-Acvr1,MGI:6414907,2,58352976,58352976,C,A,missense_variant

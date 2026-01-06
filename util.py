@@ -6,6 +6,7 @@ Utility functions for Mouse and Human Variant Annotation
 '''
 
 import re
+import logging
 import requests
 import pandas as pd
 from Bio import Entrez
@@ -18,11 +19,20 @@ interpro_base_url = 'https://www.ebi.ac.uk/interpro/api/entry/pfam/'
 mousemine_base_url = 'https://www.mousemine.org/mousemine/service/query/results'
 ols_base_url = 'https://www.ebi.ac.uk/ols4/api/'
 
+# Setup logging
+logging.basicConfig(filename='mapping.log', level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
+
 # Load MGI Allele Data
 mouse_vars = pd.read_csv('VARIANT-ALLELE-MGI.tsv', sep='\t')
 
 
 # ---- Helper functions ----
+def log_query(gene, chrom, start, end, ref, alt):
+    '''
+    Logs the query parameters in mapping.log file for debugging and record keeping purposes.
+    '''
+    logging.info(f'Query Submitted: Gene={gene}, Chromosome={chrom}, Start={start}, End={end}, Ref={ref}, Alt={alt}')
+
 def get_gene_info(gene, species='human'):
     '''
     Query Ensembl REST API and extract info for a given gene.
@@ -37,38 +47,49 @@ def get_gene_info(gene, species='human'):
     # Construct URL
     url = f'{ensembl_base_url}/lookup/symbol/{species}/{gene}?content-type=application/json'
 
-    # Make request to Ensemble REST API
-    request = requests.get(url, headers={'Content-Type': 'application/json'})
-    request.raise_for_status()
-    data = request.json()
+    # Log Ensembl request
+    logging.info(f'Ensemble Gene Info Request: {url}')
 
-    # Extract relevant data
-    ens_id = data.get('id')
-    name = data.get('display_name')
-    biotype = data.get('biotype')
-    strand = data.get('strand')
-    match = re.match(r'^(.*?) \[Source:(.+) Symbol;Acc:(.+)\]$', data.get('description')) # Split string to access description and HGNC ID
-    description = match.group(1).strip()
-    hgnc_id = match.group(3).strip()
+    try:
+        # Make request to Ensemble REST API
+        request = requests.get(url, headers={'Content-Type': 'application/json'})
+        request.raise_for_status()
+        data = request.json()
 
-    # Create gene dictionary
-    gene_info = {'HGNC': hgnc_id, 'id': ens_id, 'name': name, 'strand': strand, 'biotype': biotype, 'description': description}
+        # Extract relevant data
+        ens_id = data.get('id')
+        name = data.get('display_name')
+        biotype = data.get('biotype')
+        strand = data.get('strand')
+        match = re.match(r'^(.*?) \[Source:(.+) Symbol;Acc:(.+)\]$', data.get('description')) # Split string to access description and HGNC ID
+        description = match.group(1).strip()
+        hgnc_id = match.group(3).strip()
+
+        # Create gene dictionary
+        gene_info = {'HGNC': hgnc_id, 'id': ens_id, 'name': name, 'strand': strand, 'biotype': biotype, 'description': description}
+    
+    except Exception as e:
+        logging.error(f'Ensembl Gene Info Request Failed: {e}')
+        ValueError(f'Ensembl Gene Info Request Failed: {e}')
 
     return gene_info
 
-def get_domain_name(pfscan_domain_id):
+def get_domain_name(pfam_domain_id):
     '''
     Query InterPro Pfam database to get domain name.
 
     Parameters:
-        pfscan_domain_id: string. PFScan domain ID to extract full name for.
+        pfam_domain_id: string. Pfam domain ID to extract full name for.
 
     Returns:
         string. The corresponding long name for given domain ID.
     '''
     # Construct URL
-    url = interpro_base_url + pfscan_domain_id
+    url = interpro_base_url + pfam_domain_id
     headers = {'Accept': 'application/json'}
+
+    # Log InterPro request
+    logging.info(f'InterPro Request: {url}')
 
     try:
         # Make request to InterPro REST API
@@ -78,13 +99,14 @@ def get_domain_name(pfscan_domain_id):
 
         # Extract domain long name
         metadata = json['metadata']
-        name = metadata['name'].get('name') or metadata['name'].get('value')
+        long_name = metadata['name'].get('name') or metadata['name'].get('value')
 
         # Return domain long name
-        return name
+        return long_name
     
     # Return None if the request fails
     except Exception:
+        logging.error(f'InterPro Request Failed: {url}')
         return None
 
 def get_vep_data(chromosome, start, end, alt, species='human'):
@@ -112,6 +134,9 @@ def get_vep_data(chromosome, start, end, alt, species='human'):
     if species == 'human': 
         url += '&pick_order=mane_select,length&pick=1'
 
+    # Log VEP request
+    logging.info(f'Ensembl VEP Request: {url}')
+
     try:
         # Make request to VEP
         request = requests.get(url, headers={'Content-Type': 'application/json', 'Accept': 'application/json'}, timeout=15)
@@ -127,7 +152,7 @@ def get_vep_data(chromosome, start, end, alt, species='human'):
 
         # If no VEP results, return empty DataFrame
         if len(consequences) == 0:
-            print('VEP yielded no results')
+            logging.warning(f'VEP yielded no results')
             return pd.DataFrame()
         
         # Normalize JSON result into a DataFrame
@@ -144,15 +169,24 @@ def get_vep_data(chromosome, start, end, alt, species='human'):
             for domain in vep_df['domains'][0]:
                 if isinstance(domain, dict) and domain.get('db') == 'Pfam':
                     pfam = domain['name']
+                    break
 
+        else:
+            logging.error('VEP domain request failed: there is no "domains" information in response')
+            pfam = None
+
+        try:
             vep_df['domains'] = pfam
+        except:
+            logging.error('VEP domain request failed: there is no pfam domain in response')
+            vep_df['domains'] = None
 
         # Return VEP DataFrame
         return vep_df
     
     # Handle request failure
     except Exception as e:
-        print('VEP request failed:', e)
+        logging.error('VEP request failed:', e)
         return pd.DataFrame()
 
 def get_clinvar_ids(gene, start):
@@ -166,13 +200,22 @@ def get_clinvar_ids(gene, start):
     Returns:
         list of strings. The ClinVar IDs of variants at given location.
     '''
-    # Make request to ClinVar
-    handle = Entrez.esearch(db='clinvar', term=f'{gene}[Gene Name] AND {start}[Base Position]', retmax=500) 
-    record = Entrez.read(handle)
-    handle.close()
+    # Log Request to ClinVar
+    logging.info(f'ClinVar ID Request: [Gene Name]={gene}, [Base Position]={start}')
 
-    # Extract ClinVar IDs
-    clinvar_ids = record['IdList']
+    try:
+        # Make request to ClinVar
+        handle = Entrez.esearch(db='clinvar', term=f'{gene}[Gene Name] AND {start}[Base Position]', retmax=500) 
+        record = Entrez.read(handle)
+        handle.close()
+
+        # Extract ClinVar IDs
+        clinvar_ids = record['IdList']
+    
+    # Handle Request Failure
+    except Exception as e:
+        logging.error(f'ClinVar Request Failed: {e}')
+        ValueError(f'ClinVar Request Failed: {e}')
 
     return clinvar_ids
 
@@ -189,47 +232,56 @@ def get_disease_associations(clinvar_id):
             consequence. string. The first molecular consequence term extracted from the record. Returns None if none found.
             diseases. list of strings. A list of disease/condition names associated with the variant.
     '''
-    # Fetch the VCV record from ClinVar
-    handle = Entrez.efetch(db='clinvar', rettype='vcv', id=clinvar_id, from_esearch=True)
-    xml_text = handle.read()
-    handle.close()
+    # Log Request to ClinVar
+    logging.info(f'ClinVar ID Request: [ClinVar ID]={clinvar_id}')
+    
+    try:
+        # Fetch the VCV record from ClinVar
+        handle = Entrez.efetch(db='clinvar', rettype='vcv', id=clinvar_id, from_esearch=True)
+        xml_text = handle.read()
+        handle.close()
 
-    # Parse XML into an element tree
-    clinvar_root = ET.fromstring(xml_text)
+        # Parse XML into an element tree
+        clinvar_root = ET.fromstring(xml_text)
 
-    # Extract all protein changes
-    prt_changes = []
-    for prt_section in clinvar_root.findall(".//ProteinChange"):
-        prt = prt_section.text
-        prt_changes.append(prt)
+        # Extract all protein changes
+        prt_changes = []
+        for prt_section in clinvar_root.findall(".//ProteinChange"):
+            prt = prt_section.text
+            prt_changes.append(prt)
 
-    # Extract the first molecular consequence
-    for mol_cons in clinvar_root.findall(".//MolecularConsequence"):
-        try:
-            consequence = mol_cons.get("Type").replace(" ", "_")
-            break # Only take the first available consequence
-        except: 
-            continue
+        # Extract the first molecular consequence
+        for mol_cons in clinvar_root.findall(".//MolecularConsequence"):
+            try:
+                consequence = mol_cons.get("Type").replace(" ", "_")
+                break # Only take the first available consequence
+            except: 
+                continue
 
-    # Extract associated diseases
-    diseases = []
-    for rcv in clinvar_root.findall(".//RCVAccession"):
+        # Extract associated diseases
+        diseases = []
+        for rcv in clinvar_root.findall(".//RCVAccession"):
 
-        # If only want to retain associations of certain review status
-        # accepted_review_status = ['practice guideline', 'reviewed by expert panel', 'criteria provided, multiple submitters, no conflicts']
-        # review = rcv.find(".//ReviewStatus").text
-        # if review not in accepted_review_status:
-        #     continue
+            # If only want to retain associations of certain review status
+            # accepted_review_status = ['practice guideline', 'reviewed by expert panel', 'criteria provided, multiple submitters, no conflicts']
+            # review = rcv.find(".//ReviewStatus").text
+            # if review not in accepted_review_status:
+            #     continue
 
-        # Get disease
-        condition = rcv.find(".//ClassifiedCondition") 
-        disease = condition.text
+            # Get disease
+            condition = rcv.find(".//ClassifiedCondition") 
+            disease = condition.text
 
-        # Get submission count
-        germline_description = rcv.find(".//Description") 
-        submissions = germline_description.get("SubmissionCount")
+            # Get submission count
+            germline_description = rcv.find(".//Description") 
+            submissions = germline_description.get("SubmissionCount")
 
-        diseases.append(disease)
+            diseases.append(disease)
+    
+    # Handle Request Failure
+    except Exception as e:
+        logging.error(f'ClinVar Disease Request Failed: {e}')
+        ValueError(f'ClinVar Disease Request Failed: {e}')
     
     return prt_changes, consequence, diseases
 
@@ -250,6 +302,9 @@ def mouse_disease_associations(gene):
             - Gene.ontologyAnnotations.subject.symbol
             - Gene.ontologyAnnotations.qualifier
     '''
+
+    # log Request to MouseMine
+    logging.info(f'MouseMine Request: [Gene Symbol]={gene}')
     
     # Construct query XML
     query_xml = f'''
@@ -257,8 +312,8 @@ def mouse_disease_associations(gene):
         view="Gene.alleles.symbol 
             Gene.alleles.name 
             Gene.alleles.primaryIdentifier 
-            Gene.ontologyAnnotations.ontologyTerm.name 
-            Gene.ontologyAnnotations.ontologyTerm.identifier" 
+            Gene.alleles.ontologyAnnotations.ontologyTerm.name 
+            Gene.alleles.ontologyAnnotations.ontologyTerm.identifier" 
         longDescription="" 
         sortOrder="Gene.alleles.symbol asc" 
         constraintLogic="A">
@@ -266,25 +321,31 @@ def mouse_disease_associations(gene):
     </query>
     '''
 
-    # Make request to MouseMine
-    response = requests.get(
-        mousemine_base_url,
-        params={'format': 'json',
-                'query': query_xml})
-    data = response.json()
+    try:
+        # Make request to MouseMine
+        response = requests.get(
+            mousemine_base_url,
+            params={'format': 'json',
+                    'query': query_xml})
+        data = response.json()
 
-    # Create results DataFrame
-    ontology_df = pd.DataFrame(data['results'], columns=data['columnHeaders'])
+        # Create results DataFrame
+        ontology_df = pd.DataFrame(data['results'], columns=data['columnHeaders'])
 
-    # Rename columns
-    ontology_df.rename(columns={'Gene > Alleles > Symbol':'symbol', 
-                                'Gene > Alleles > Name':'name', 
-                                'Gene > Alleles > Primary Identifier':'primaryIdentifier', 
-                                'Gene > Ontology Annotations > Term Name':'ontologyName', 
-                                'Gene > Ontology Annotations > Ontology Term . Identifier':'ontologyID'}, inplace=True)
+        # Rename columns
+        ontology_df.rename(columns={'Gene > Alleles > Symbol':'symbol', 
+                                    'Gene > Alleles > Name':'name', 
+                                    'Gene > Alleles > Primary Identifier':'primaryIdentifier', 
+                                    'Gene > Alleles > Ontology Annotations > Term Name':'ontologyName', 
+                                    'Gene > Alleles > Ontology Annotations > Ontology Term . Identifier':'ontologyID'}, inplace=True)
 
-    # Filter DataFrame to only retain DOID ontology terms
-    ontology_df = ontology_df[ontology_df['ontologyID'].str.startswith('DOID:')]
+        # Filter DataFrame to only retain DOID ontology terms
+        ontology_df = ontology_df[ontology_df['ontologyID'].str.startswith('DOID:')]
+
+    # Handle Request Failure
+    except Exception as e:
+        logging.error(f'MouseMine Request Failed: {e}')
+        ValueError(f'MouseMine Request Failed: {e}')
 
     return ontology_df
 
@@ -301,24 +362,53 @@ def get_doid_name(disease):
     # Construct URL
     url = ols_base_url + f'search?q={disease}&ontology=doid&exact=true'
 
-    # Make request to OLS
-    request = requests.get(url)
-    request.raise_for_status()
+    # Log Request to OLS
+    logging.info(f'OLS Request: {url}')
 
-    # Extract data
-    data = request.json()
-    docs = data.get("response", {}).get("docs", [])
+    try:
+        # Make request to OLS
+        request = requests.get(url)
+        request.raise_for_status()
 
-    # If no results return None
-    if not docs:
-        return None
-    
-    # Extract best match
-    doc = docs[0]
+        # Extract data
+        data = request.json()
+        docs = data.get("response", {}).get("docs", [])
+
+        # If no results return None
+        if not docs:
+            return None
+        
+        # Extract best match
+        doc = docs[0]
+
+    except Exception as e:
+        logging.error(f'OLS Request Failed: {e}')
+        ValueError(f'OLS Request Failed: {e}')
 
     return {'label': doc.get('label'),
             'DOID': doc.get('obo_id')}
-    
+
+def log_results(hum_gene_df, hum_protein_df, mouse_gene_df, mouse_prt_df, var_scores_df):
+    '''
+    Logs the resulting DataFrames to CSV files for record keeping and debugging purposes.
+    '''
+    # Save human tables to CSVs
+    hum_gene_df.to_csv('./results/hum_gene_df.csv', index=False)
+    logging.info('Saved hum_gene_df to ./results/hum_gene_df.csv')
+
+    hum_protein_df.to_csv('./results/hum_protein_df.csv', index=False)
+    logging.info('Saved hum_protein_df to ./results/hum_protein_df.csv')
+
+    # Save mouse tables to CSVs
+    mouse_gene_df.to_csv('./results/mouse_gene_df.csv', index=False)
+    logging.info('Saved mouse_gene_df to ./results/mouse_gene_df.csv')
+
+    mouse_prt_df.to_csv('./results/mouse_protein_df.csv', index=False)
+    logging.info('Saved mouse_protein_df to ./results/mouse_protein_df.csv')
+
+    # Save score table to CSV
+    var_scores_df.to_csv('./results/var_scores_df.csv', index=False)
+    logging.info('Saved var_scores_df to ./results/var_scores_df.csv')
 
 # ---- Main functions ----
 def hvar_to_output(gene, chrom, start, end, ref, alt, assembly='GRCh38'):
@@ -349,10 +439,13 @@ def hvar_to_output(gene, chrom, start, end, ref, alt, assembly='GRCh38'):
         gene_df: pandas.DataFrame. Gene-level metadata and input variant summary.
         protein_df: pandas.DataFrame. Transcript-level information.
     '''
+    # Log the query
+    log_query(gene, chrom, start, end, ref, alt)
+
     # Check assembly
     if assembly != 'GRCh38':
+        logging.info(f'Assembly Error: {assembly} is not supported. Only GRCh38 is supported.')
         raise ValueError('Assembly must be GRCh38')
-
 
     # Build gene table
     gene_info = get_gene_info(gene)
@@ -372,7 +465,6 @@ def hvar_to_output(gene, chrom, start, end, ref, alt, assembly='GRCh38'):
 
     # Use VEP to get pathogenicity and protein info
     vep_df = get_vep_data(chrom, start, end, alt)
-    vep_df.to_csv('vep_test.csv', index=False)
     vep_df = vep_df[vep_df['biotype'] == 'protein_coding']
 
 
@@ -426,15 +518,11 @@ def hvar_to_output(gene, chrom, start, end, ref, alt, assembly='GRCh38'):
 
     protein_df['Associated Diseases'] = associated_diseases
 
-
     # Print resulting tables
     print(gene_df)
     print('----------')
     print(protein_df)
-
-    # Save resulting tables to CSVs
-    gene_df.to_csv('hum_gene_df.csv', index=False)
-    protein_df.to_csv('hum_protein_df.csv', index=False)
+    print('----------')
     
     return gene_df, protein_df
 
@@ -483,9 +571,9 @@ def mvar_to_output(gene, assembly='GRCm39'):
 
     # Create allele DataFrame
     mouse_allele_df = pd.DataFrame()
-    old_cols = ['AlleleAssociatedGeneSymbol', 'AlleleId', 'Chromosome', 'StartPosition', 
+    old_cols = ['AlleleAssociatedGeneSymbol', 'AlleleId', 'AlleleSymbol', 'Chromosome', 'StartPosition', 
                 'EndPosition', 'SequenceOfReference', 'SequenceOfVariant'] # Column names in mouse_select
-    new_cols = ['Gene', 'AlleleId', 'Chromosome', 'Start', 'End', 'Ref', 'Alt'] # Corresponding column names for mouse_allele_df
+    new_cols = ['Gene', 'AlleleID', 'AlleleSymbol', 'Chromosome', 'Start', 'End', 'Ref', 'Alt'] # Corresponding column names for mouse_allele_df
     mouse_allele_df[new_cols] = mouse_select[old_cols] # Update column names
 
 
@@ -502,7 +590,8 @@ def mvar_to_output(gene, assembly='GRCm39'):
     mouse_vep_df = pd.DataFrame()
     for i, row in mouse_allele_df.iterrows():
         variant_vep = get_vep_data(row['Chromosome'], row['Start'], row['End'], row['Alt'], species='mouse')
-        variant_vep['AlleleId'] = row['AlleleId']
+        variant_vep['AlleleID'] = row['AlleleID']
+        variant_vep['AlleleSymbol'] = row['AlleleSymbol']
         mouse_vep_df = pd.concat([mouse_vep_df, variant_vep], ignore_index=True)
     
     # Keep only protein coding transcript consequences
@@ -529,7 +618,7 @@ def mvar_to_output(gene, assembly='GRCm39'):
 
 
     # Rearrange and rename columns
-    mouse_prt_df = mouse_prt_df[['AlleleId', 'transcript_id', 'biotype', 
+    mouse_prt_df = mouse_prt_df[['AlleleID', 'AlleleSymbol', 'transcript_id', 'biotype', 
                                  'exon', 'domains', 'Pfam Domain Name', 
                                  'consequence_terms', 'codons', 'amino_acids', 
                                  'refAA', 'varAA']]
@@ -542,12 +631,15 @@ def mvar_to_output(gene, assembly='GRCm39'):
 
     # Query MouseMine for ontology associations
     mouse_ontology_df = mouse_disease_associations(gene)
-    mouse_ontology_df.to_csv('mouse_onntology_df.csv', index=False)
 
     # Merge ontology associations into prt DataFrame
     mouse_prt_df = mouse_prt_df.merge(mouse_ontology_df[['primaryIdentifier', 'ontologyName', 'ontologyID']], 
-                                      left_on='AlleleId', right_on='primaryIdentifier')
+                                      left_on='AlleleID', right_on='primaryIdentifier')
+    mouse_prt_df = mouse_prt_df.drop(columns=['primaryIdentifier'])
 
+    # Save debugging tables to CSVs
+    mouse_ontology_df.to_csv('./testing_results/mouse_onntology_df.csv', index=False)
+    mouse_allele_df.to_csv('./testing_results/mouse_allele_df.csv', index=False)
 
     # Print resulting tables
     print(mouse_gene_df)
@@ -557,15 +649,11 @@ def mvar_to_output(gene, assembly='GRCm39'):
     print(mouse_prt_df)
     print('----------')
     print(mouse_allele_extra)
+    print('----------')
 
-    # Save resulting tables to CSVs
-    mouse_gene_df.to_csv('mouse_gene_df.csv', index=False)
-    mouse_prt_df.to_csv('mouse_protein_df.csv', index=False)
-    mouse_allele_df.to_csv('mouse_allele_df.csv', index=False)
-    
     return mouse_gene_df, mouse_prt_df
 
-def score_ortho_vars(human_prt_df, mouse_prt_df):
+def score_ortho_vars(human_gene_df, human_prt_df, mouse_gene_df, mouse_prt_df):
     '''
     Score orthologous mouse variant similarity against human variant.
 
@@ -596,6 +684,9 @@ def score_ortho_vars(human_prt_df, mouse_prt_df):
     # Score each mouse variant against human
     score_rows = []
     for idx, mouse_prt in mouse_prt_df.iterrows():
+        allele_id = mouse_prt['AlleleID']
+        allele_symbol = mouse_prt['AlleleSymbol']
+        trx_id = mouse_prt['transcript_id']
         match_biotype = mouse_prt['biotype'] == biotype
         match_exon = mouse_prt['exon'] == exon_rank
         match_domain = mouse_prt['domains'] == domain
@@ -612,7 +703,10 @@ def score_ortho_vars(human_prt_df, mouse_prt_df):
                            match_disease]) / 6 * 100
 
         # Append score row
-        score_rows.append({'biotype_match': match_biotype,
+        score_rows.append({'AlleleID': allele_id,
+                           'AlleleSymbol': allele_symbol,
+                           'transcript_id': trx_id,
+                           'biotype_match': match_biotype,
                            'exon_match': match_exon,
                            'domain_match': match_domain,
                            'consequence_match': match_consequence,
@@ -622,11 +716,15 @@ def score_ortho_vars(human_prt_df, mouse_prt_df):
 
     # Create and display score DataFrame
     score_df = pd.DataFrame(score_rows)
-    score_df.to_csv('var_scores_df.csv', index=False)
+    score_df = score_df.sort_values(by='total_score', ascending=False)
 
     print(score_df)
+    print('----------')
+
+    log_results(human_gene_df, human_prt_df, mouse_gene_df, mouse_prt_df, score_df)
 
     return score_df
+
 
 if __name__ == '__main__':
     None

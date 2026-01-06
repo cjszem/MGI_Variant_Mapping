@@ -1,0 +1,11 @@
+AlleleID,AlleleSymbol,transcript_id,biotype,exon,domains,Pfam Domain Name,consequence_terms,codons,amino_acids,refAA,varAA,ontologyName,ontologyID
+MGI:5763014,Acvr1<sup>tm2.1Vlcg</sup>,ENSMUST00000056376,protein_coding,6/11,PF08515,Transforming growth factor beta type I GS-motif,missense_variant,cGc/cAc,R206H,R,H,fibrodysplasia ossificans progressiva,DOID:13374
+MGI:5763014,Acvr1<sup>tm2.1Vlcg</sup>,ENSMUST00000090935,protein_coding,8/13,PF08515,Transforming growth factor beta type I GS-motif,missense_variant,cGc/cAc,R206H,R,H,fibrodysplasia ossificans progressiva,DOID:13374
+MGI:5763014,Acvr1<sup>tm2.1Vlcg</sup>,ENSMUST00000112599,protein_coding,5/10,PF08515,Transforming growth factor beta type I GS-motif,missense_variant,cGc/cAc,R206H,R,H,fibrodysplasia ossificans progressiva,DOID:13374
+MGI:5763014,Acvr1<sup>tm2.1Vlcg</sup>,ENSMUST00000112601,protein_coding,7/12,PF08515,Transforming growth factor beta type I GS-motif,missense_variant,cGc/cAc,R206H,R,H,fibrodysplasia ossificans progressiva,DOID:13374
+MGI:5763014,Acvr1<sup>tm2.1Vlcg</sup>,ENSMUST00000126407,protein_coding,,PF08515,Transforming growth factor beta type I GS-motif,downstream_gene_variant,,nan<NA>None,nan,,fibrodysplasia ossificans progressiva,DOID:13374
+MGI:5471642,Acvr1<sup>tm1Emsh</sup>,ENSMUST00000056376,protein_coding,6/11,PF08515,Transforming growth factor beta type I GS-motif,missense_variant,cGc/cAc,R206H,R,H,fibrodysplasia ossificans progressiva,DOID:13374
+MGI:5471642,Acvr1<sup>tm1Emsh</sup>,ENSMUST00000090935,protein_coding,8/13,PF08515,Transforming growth factor beta type I GS-motif,missense_variant,cGc/cAc,R206H,R,H,fibrodysplasia ossificans progressiva,DOID:13374
+MGI:5471642,Acvr1<sup>tm1Emsh</sup>,ENSMUST00000112599,protein_coding,5/10,PF08515,Transforming growth factor beta type I GS-motif,missense_variant,cGc/cAc,R206H,R,H,fibrodysplasia ossificans progressiva,DOID:13374
+MGI:5471642,Acvr1<sup>tm1Emsh</sup>,ENSMUST00000112601,protein_coding,7/12,PF08515,Transforming growth factor beta type I GS-motif,missense_variant,cGc/cAc,R206H,R,H,fibrodysplasia ossificans progressiva,DOID:13374
+MGI:5471642,Acvr1<sup>tm1Emsh</sup>,ENSMUST00000126407,protein_coding,,PF08515,Transforming growth factor beta type I GS-motif,downstream_gene_variant,,nan<NA>None,nan,,fibrodysplasia ossificans progressiva,DOID:13374
