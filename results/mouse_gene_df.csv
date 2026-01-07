@@ -1,2 +1,2 @@
 Organism,Gene,Description,HGNC,Ensembl ID,Biotype,Strand
-Mouse,Macf1,microtubule-actin crosslinking factor 1,MGI:108559,ENSMUSG00000028649,protein_coding,-1
+Mouse,Acvr1,"activin A receptor, type 1",MGI:87911,ENSMUSG00000026836,protein_coding,-1

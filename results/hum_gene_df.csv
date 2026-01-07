@@ -1,2 +1,2 @@
 Organism,Gene,Description,HGNC,Ensembl ID,Biotype,Strand,Chr,Start,End,Ref,Alt
-Human,MACF1,microtubule actin crosslinking factor 1,HGNC:13664,ENSG00000127603,protein_coding,1,1,39468726,39468726,T,G
+Human,ACVR1,activin A receptor type 1,HGNC:171,ENSG00000115170,protein_coding,-1,2,157774114,157774114,C,T

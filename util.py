@@ -151,6 +151,9 @@ def get_vep_data(chromosome, start, end, alt, species='human'):
         vep_df['domains'] = pfam
         vep_df.rename(columns={'domains': 'Domain'}, inplace=True)
 
+        # Handle empty or null amino_acid values - frequently asssociated with downstream_gene_variants and upstream_gene_variants
+        vep_df['amino_acids'] = vep_df.apply(lambda row: row['amino_acids'] if pd.notnull(row['amino_acids']) else None, axis=1)
+
         # Return VEP DataFrame
         return vep_df
     
@@ -733,20 +736,11 @@ def score_ortho_vars(human_gene_df, human_prt_df, mouse_gene_df, mouse_prt_df):
     score_df['domain_match'] = mouse_prt_df['Pfam Domain ID'].apply(lambda x: (x == domain) if (x is not None and domain is not None) else None)
     score_df['disease_match'] = mouse_prt_df['ontologyName'].apply(lambda x: x in diseases_doid)
 
-    # Calculate total score - percentage
-    def calculate_score(row):
+    # columns which can be attributed to score
+    match_cols = ['biotype_match', 'consequence_match', 'AA_match', 'exon_match', 'domain_match', 'disease_match']
 
-        # Filter out None values - if missing domain information
-        valid_matches = [v for v in row[['biotype_match', 'consequence_match', 'AA_match', 'exon_match', 'domain_match', 'disease_match']] if isinstance(v, bool)]
-        
-        # Calculate precentage of hits
-        score = sum(valid_matches)
-        percentage = (score / len(valid_matches)) * 100
-        
-        return percentage
-
-    # Add score column
-    score_df['total_score'] = score_df.apply(calculate_score, axis=1)
+    # Calculate precentage of hits
+    score_df['total_score'] = score_df[match_cols].sum(axis=1) / score_df[match_cols].notna().sum(axis=1) * 100
 
     # Sort results by score
     score_df = score_df.sort_values(by='total_score', ascending=False)

@@ -59,4 +59,102 @@
 2026-01-06 15:26:54,711 - INFO - Saved hum_protein_df to ./results/hum_protein_df.csv
 2026-01-06 15:26:54,712 - INFO - Saved mouse_gene_df to ./results/mouse_gene_df.csv
 2026-01-06 15:26:54,713 - INFO - Saved mouse_protein_df to ./results/mouse_protein_df.csv
-2026-01-06 15:26:54,713 - INFO - Saved var_scores_df to ./results/var_scores_df.csv
+2026-01-06 15:26:54,713 - INFO - Saved var_scores_df to ./results/var_scores_df.csv2026-01-07 10:10:58,222 - INFO - Query Submitted: Gene=MACF1, Chromosome=1, Start=39468726, End=39468726, Ref=T, Alt=G
+2026-01-07 10:10:58,224 - INFO - Ensemble Gene Info Request: https://rest.ensembl.org/lookup/symbol/human/MACF1?content-type=application/json
+2026-01-07 10:10:58,872 - INFO - Ensembl VEP Request: https://rest.ensembl.org/vep/human/region/1:39468726-39468726/G?numbers=1&domains=1&pick_order=mane_select,length&pick=1
+2026-01-07 10:10:59,585 - INFO - InterPro Request: https://www.ebi.ac.uk/interpro/api/entry/pfam/PF02187
+2026-01-07 10:11:00,074 - INFO - ClinVar ID Request: [Gene Name]=MACF1, [Base Position]=39468726
+2026-01-07 10:11:00,237 - INFO - ClinVar ID Request: [ClinVar ID]=586950
+2026-01-07 10:11:01,015 - INFO - Ensemble Gene Info Request: https://rest.ensembl.org/lookup/symbol/mouse/Macf1?content-type=application/json
+2026-01-07 10:11:01,579 - INFO - Ensembl VEP Request: https://rest.ensembl.org/vep/mouse/region/4:123420449-123420450/CG?numbers=1&domains=1
+2026-01-07 10:11:04,132 - WARNING - VEP domain failure: no "domains" information in response
+2026-01-07 10:11:04,146 - INFO - MouseMine Request: [Gene Symbol]=Macf1
+2026-01-07 10:11:04,269 - INFO - Saved hum_gene_df to ./results/hum_gene_df.csv
+2026-01-07 10:11:04,270 - INFO - Saved hum_protein_df to ./results/hum_protein_df.csv
+2026-01-07 10:11:04,271 - INFO - Saved mouse_gene_df to ./results/mouse_gene_df.csv
+2026-01-07 10:11:04,271 - INFO - Saved mouse_protein_df to ./results/mouse_protein_df.csv
+2026-01-07 10:11:04,272 - INFO - Saved var_scores_df to ./results/var_scores_df.csv
+2026-01-07 10:11:32,537 - INFO - Query Submitted: Gene=ACVR1, Chromosome=2, Start=157774114, End=157774114, Ref=C, Alt=T
+2026-01-07 10:11:32,538 - INFO - Ensemble Gene Info Request: https://rest.ensembl.org/lookup/symbol/human/ACVR1?content-type=application/json
+2026-01-07 10:11:33,006 - INFO - Ensembl VEP Request: https://rest.ensembl.org/vep/human/region/2:157774114-157774114/T?numbers=1&domains=1&pick_order=mane_select,length&pick=1
+2026-01-07 10:11:33,647 - INFO - InterPro Request: https://www.ebi.ac.uk/interpro/api/entry/pfam/PF08515
+2026-01-07 10:11:34,141 - INFO - ClinVar ID Request: [Gene Name]=ACVR1, [Base Position]=157774114
+2026-01-07 10:11:34,652 - INFO - ClinVar ID Request: [ClinVar ID]=18309
+2026-01-07 10:11:35,276 - INFO - Ensemble Gene Info Request: https://rest.ensembl.org/lookup/symbol/mouse/Acvr1?content-type=application/json
+2026-01-07 10:11:35,807 - INFO - Ensembl VEP Request: https://rest.ensembl.org/vep/mouse/region/2:58364210-58364211/AT?numbers=1&domains=1
+2026-01-07 10:11:37,198 - INFO - Ensembl VEP Request: https://rest.ensembl.org/vep/mouse/region/2:58364211-58364211/T?numbers=1&domains=1
+2026-01-07 10:11:39,058 - INFO - Ensembl VEP Request: https://rest.ensembl.org/vep/mouse/region/2:58364211-58364211/T?numbers=1&domains=1
+2026-01-07 10:11:40,161 - INFO - Ensembl VEP Request: https://rest.ensembl.org/vep/mouse/region/2:58352976-58352976/A?numbers=1&domains=1
+2026-01-07 10:11:41,009 - INFO - Ensembl VEP Request: https://rest.ensembl.org/vep/mouse/region/2:58352976-58352976/A?numbers=1&domains=1
+2026-01-07 10:11:41,927 - INFO - InterPro Request: https://www.ebi.ac.uk/interpro/api/entry/pfam/PF08515
+2026-01-07 10:11:42,390 - INFO - InterPro Request: https://www.ebi.ac.uk/interpro/api/entry/pfam/PF07714
+2026-01-07 10:11:43,273 - INFO - MouseMine Request: [Gene Symbol]=Acvr1
+2026-01-07 10:11:43,350 - INFO - OLS Request: https://www.ebi.ac.uk/ols4/api/search?q=Progressive myositis ossificans&ontology=doid&exact=true
+2026-01-07 10:11:43,794 - INFO - OLS Request: https://www.ebi.ac.uk/ols4/api/search?q=not provided&ontology=doid&exact=true
+2026-01-07 10:11:44,262 - INFO - OLS Request: https://www.ebi.ac.uk/ols4/api/search?q=Inborn genetic diseases&ontology=doid&exact=true
+2026-01-07 10:11:44,722 - INFO - OLS Request: https://www.ebi.ac.uk/ols4/api/search?q=Epicanthus&ontology=doid&exact=true
+2026-01-07 10:11:45,197 - INFO - OLS Request: https://www.ebi.ac.uk/ols4/api/search?q=ACVR1-related disorder&ontology=doid&exact=true
+2026-01-07 10:11:45,637 - INFO - OLS Request: https://www.ebi.ac.uk/ols4/api/search?q=Ependymoma&ontology=doid&exact=true
+2026-01-07 10:11:46,129 - INFO - OLS Request: https://www.ebi.ac.uk/ols4/api/search?q=Diffuse pediatric-type high-grade glioma, H3-wildtype and IDH-wildtype&ontology=doid&exact=true
+2026-01-07 10:11:46,580 - INFO - OLS Request: https://www.ebi.ac.uk/ols4/api/search?q=Diffuse midline glioma, H3 K27M-mutant&ontology=doid&exact=true
+2026-01-07 10:11:47,050 - INFO - Saved hum_gene_df to ./results/hum_gene_df.csv
+2026-01-07 10:11:47,052 - INFO - Saved hum_protein_df to ./results/hum_protein_df.csv
+2026-01-07 10:11:47,052 - INFO - Saved mouse_gene_df to ./results/mouse_gene_df.csv
+2026-01-07 10:11:47,053 - INFO - Saved mouse_protein_df to ./results/mouse_protein_df.csv
+2026-01-07 10:11:47,059 - INFO - Saved var_scores_df to ./results/var_scores_df.csv
+2026-01-07 10:13:58,773 - INFO - Query Submitted: Gene=ACVR1, Chromosome=2, Start=157774114, End=157774114, Ref=C, Alt=T
+2026-01-07 10:13:58,773 - INFO - Ensemble Gene Info Request: https://rest.ensembl.org/lookup/symbol/human/ACVR1?content-type=application/json
+2026-01-07 10:13:59,246 - INFO - Ensembl VEP Request: https://rest.ensembl.org/vep/human/region/2:157774114-157774114/T?numbers=1&domains=1&pick_order=mane_select,length&pick=1
+2026-01-07 10:13:59,888 - INFO - InterPro Request: https://www.ebi.ac.uk/interpro/api/entry/pfam/PF08515
+2026-01-07 10:14:00,377 - INFO - ClinVar ID Request: [Gene Name]=ACVR1, [Base Position]=157774114
+2026-01-07 10:14:00,505 - INFO - ClinVar ID Request: [ClinVar ID]=18309
+2026-01-07 10:14:01,413 - INFO - Ensemble Gene Info Request: https://rest.ensembl.org/lookup/symbol/mouse/Acvr1?content-type=application/json
+2026-01-07 10:14:02,107 - INFO - Ensembl VEP Request: https://rest.ensembl.org/vep/mouse/region/2:58364210-58364211/AT?numbers=1&domains=1
+2026-01-07 10:14:03,445 - INFO - Ensembl VEP Request: https://rest.ensembl.org/vep/mouse/region/2:58364211-58364211/T?numbers=1&domains=1
+2026-01-07 10:14:04,448 - INFO - Ensembl VEP Request: https://rest.ensembl.org/vep/mouse/region/2:58364211-58364211/T?numbers=1&domains=1
+2026-01-07 10:14:05,266 - INFO - Ensembl VEP Request: https://rest.ensembl.org/vep/mouse/region/2:58352976-58352976/A?numbers=1&domains=1
+2026-01-07 10:14:06,091 - INFO - Ensembl VEP Request: https://rest.ensembl.org/vep/mouse/region/2:58352976-58352976/A?numbers=1&domains=1
+2026-01-07 10:14:06,873 - INFO - InterPro Request: https://www.ebi.ac.uk/interpro/api/entry/pfam/PF08515
+2026-01-07 10:14:07,329 - INFO - InterPro Request: https://www.ebi.ac.uk/interpro/api/entry/pfam/PF07714
+2026-01-07 10:14:08,187 - INFO - MouseMine Request: [Gene Symbol]=Acvr1
+2026-01-07 10:14:08,273 - INFO - OLS Request: https://www.ebi.ac.uk/ols4/api/search?q=Progressive myositis ossificans&ontology=doid&exact=true
+2026-01-07 10:14:08,708 - INFO - OLS Request: https://www.ebi.ac.uk/ols4/api/search?q=not provided&ontology=doid&exact=true
+2026-01-07 10:14:09,189 - INFO - OLS Request: https://www.ebi.ac.uk/ols4/api/search?q=Inborn genetic diseases&ontology=doid&exact=true
+2026-01-07 10:14:09,644 - INFO - OLS Request: https://www.ebi.ac.uk/ols4/api/search?q=Epicanthus&ontology=doid&exact=true
+2026-01-07 10:14:10,102 - INFO - OLS Request: https://www.ebi.ac.uk/ols4/api/search?q=ACVR1-related disorder&ontology=doid&exact=true
+2026-01-07 10:14:10,554 - INFO - OLS Request: https://www.ebi.ac.uk/ols4/api/search?q=Ependymoma&ontology=doid&exact=true
+2026-01-07 10:14:11,011 - INFO - OLS Request: https://www.ebi.ac.uk/ols4/api/search?q=Diffuse pediatric-type high-grade glioma, H3-wildtype and IDH-wildtype&ontology=doid&exact=true
+2026-01-07 10:14:11,450 - INFO - OLS Request: https://www.ebi.ac.uk/ols4/api/search?q=Diffuse midline glioma, H3 K27M-mutant&ontology=doid&exact=true
+2026-01-07 10:14:11,918 - INFO - Saved hum_gene_df to ./results/hum_gene_df.csv
+2026-01-07 10:14:11,920 - INFO - Saved hum_protein_df to ./results/hum_protein_df.csv
+2026-01-07 10:14:11,920 - INFO - Saved mouse_gene_df to ./results/mouse_gene_df.csv
+2026-01-07 10:14:11,921 - INFO - Saved mouse_protein_df to ./results/mouse_protein_df.csv
+2026-01-07 10:14:11,921 - INFO - Saved var_scores_df to ./results/var_scores_df.csv
+2026-01-07 10:15:17,825 - INFO - Query Submitted: Gene=ACVR1, Chromosome=2, Start=157774114, End=157774114, Ref=C, Alt=T
+2026-01-07 10:15:17,825 - INFO - Ensemble Gene Info Request: https://rest.ensembl.org/lookup/symbol/human/ACVR1?content-type=application/json
+2026-01-07 10:15:18,358 - INFO - Ensembl VEP Request: https://rest.ensembl.org/vep/human/region/2:157774114-157774114/T?numbers=1&domains=1&pick_order=mane_select,length&pick=1
+2026-01-07 10:15:18,972 - INFO - InterPro Request: https://www.ebi.ac.uk/interpro/api/entry/pfam/PF08515
+2026-01-07 10:15:19,450 - INFO - ClinVar ID Request: [Gene Name]=ACVR1, [Base Position]=157774114
+2026-01-07 10:15:19,614 - INFO - ClinVar ID Request: [ClinVar ID]=18309
+2026-01-07 10:15:20,304 - INFO - Ensemble Gene Info Request: https://rest.ensembl.org/lookup/symbol/mouse/Acvr1?content-type=application/json
+2026-01-07 10:15:20,805 - INFO - Ensembl VEP Request: https://rest.ensembl.org/vep/mouse/region/2:58364210-58364211/AT?numbers=1&domains=1
+2026-01-07 10:15:21,877 - INFO - Ensembl VEP Request: https://rest.ensembl.org/vep/mouse/region/2:58364211-58364211/T?numbers=1&domains=1
+2026-01-07 10:15:22,859 - INFO - Ensembl VEP Request: https://rest.ensembl.org/vep/mouse/region/2:58364211-58364211/T?numbers=1&domains=1
+2026-01-07 10:15:23,731 - INFO - Ensembl VEP Request: https://rest.ensembl.org/vep/mouse/region/2:58352976-58352976/A?numbers=1&domains=1
+2026-01-07 10:15:24,656 - INFO - Ensembl VEP Request: https://rest.ensembl.org/vep/mouse/region/2:58352976-58352976/A?numbers=1&domains=1
+2026-01-07 10:15:25,415 - INFO - InterPro Request: https://www.ebi.ac.uk/interpro/api/entry/pfam/PF08515
+2026-01-07 10:15:25,854 - INFO - InterPro Request: https://www.ebi.ac.uk/interpro/api/entry/pfam/PF07714
+2026-01-07 10:15:26,681 - INFO - MouseMine Request: [Gene Symbol]=Acvr1
+2026-01-07 10:15:26,762 - INFO - OLS Request: https://www.ebi.ac.uk/ols4/api/search?q=Progressive myositis ossificans&ontology=doid&exact=true
+2026-01-07 10:15:27,248 - INFO - OLS Request: https://www.ebi.ac.uk/ols4/api/search?q=not provided&ontology=doid&exact=true
+2026-01-07 10:15:27,685 - INFO - OLS Request: https://www.ebi.ac.uk/ols4/api/search?q=Inborn genetic diseases&ontology=doid&exact=true
+2026-01-07 10:15:28,134 - INFO - OLS Request: https://www.ebi.ac.uk/ols4/api/search?q=Epicanthus&ontology=doid&exact=true
+2026-01-07 10:15:28,594 - INFO - OLS Request: https://www.ebi.ac.uk/ols4/api/search?q=ACVR1-related disorder&ontology=doid&exact=true
+2026-01-07 10:15:29,046 - INFO - OLS Request: https://www.ebi.ac.uk/ols4/api/search?q=Ependymoma&ontology=doid&exact=true
+2026-01-07 10:15:29,514 - INFO - OLS Request: https://www.ebi.ac.uk/ols4/api/search?q=Diffuse pediatric-type high-grade glioma, H3-wildtype and IDH-wildtype&ontology=doid&exact=true
+2026-01-07 10:15:29,969 - INFO - OLS Request: https://www.ebi.ac.uk/ols4/api/search?q=Diffuse midline glioma, H3 K27M-mutant&ontology=doid&exact=true
+2026-01-07 10:15:30,440 - INFO - Saved hum_gene_df to ./results/hum_gene_df.csv
+2026-01-07 10:15:30,442 - INFO - Saved hum_protein_df to ./results/hum_protein_df.csv
+2026-01-07 10:15:30,442 - INFO - Saved mouse_gene_df to ./results/mouse_gene_df.csv
+2026-01-07 10:15:30,444 - INFO - Saved mouse_protein_df to ./results/mouse_protein_df.csv
+2026-01-07 10:15:30,444 - INFO - Saved var_scores_df to ./results/var_scores_df.csv

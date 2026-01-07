@@ -1,1 +1,11 @@
 AlleleID,AlleleSymbol,Transcript ID,biotype_match,consequence_match,AA_match,exon_match,domain_match,disease_match,total_score
+MGI:5763014,Acvr1<sup>tm2.1Vlcg</sup>,ENSMUST00000056376,True,True,True,True,True,True,100.0
+MGI:5471642,Acvr1<sup>tm1Emsh</sup>,ENSMUST00000056376,True,True,True,True,True,True,100.0
+MGI:5763014,Acvr1<sup>tm2.1Vlcg</sup>,ENSMUST00000090935,True,True,True,False,True,True,83.33333333333334
+MGI:5763014,Acvr1<sup>tm2.1Vlcg</sup>,ENSMUST00000112599,True,True,True,False,True,True,83.33333333333334
+MGI:5763014,Acvr1<sup>tm2.1Vlcg</sup>,ENSMUST00000112601,True,True,True,False,True,True,83.33333333333334
+MGI:5471642,Acvr1<sup>tm1Emsh</sup>,ENSMUST00000090935,True,True,True,False,True,True,83.33333333333334
+MGI:5471642,Acvr1<sup>tm1Emsh</sup>,ENSMUST00000112599,True,True,True,False,True,True,83.33333333333334
+MGI:5471642,Acvr1<sup>tm1Emsh</sup>,ENSMUST00000112601,True,True,True,False,True,True,83.33333333333334
+MGI:5763014,Acvr1<sup>tm2.1Vlcg</sup>,ENSMUST00000126407,True,False,False,False,True,True,50.0
+MGI:5471642,Acvr1<sup>tm1Emsh</sup>,ENSMUST00000126407,True,False,False,False,True,True,50.0
