@@ -23,7 +23,11 @@ ols_base_url = 'https://www.ebi.ac.uk/ols4/api/'
 logging.basicConfig(filename='mapping.log', level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
 
 # Load MGI Allele Data
-mouse_vars = pd.read_csv('VARIANT-ALLELE-MGI.tsv', sep='\t')
+mus_alleles_df = pd.read_csv('VARIANT-ALLELE-MGI.tsv', sep='\t')
+
+# Load MGI Gene Homology Data
+homology_df = pd.read_csv("HOM_ProteinCoding.rpt", names=['MGI_ID', 'MusGeneSymbol', 'MusEntrezGeneID', 'MusHGNC_ID', 'HumGeneSymbol', 'HumEntrezGeneID'], sep="\t")
+homology_dict = dict(zip(homology_df['HumGeneSymbol'], homology_df['MusGeneSymbol']))
 
 
 # ---- Helper functions ----
@@ -556,9 +560,24 @@ def mvar_to_output(gene, assembly='GRCm39'):
     # Check assembly
     if assembly != 'GRCm39':
         raise ValueError('Assembly must be GRCm39')
+    
+    # Extract Mus gene symbol
+    mus_gene = homology_dict.get(gene, None)
+    
+    # Catch for is there is no orthologous Mus gene found
+    if mus_gene is None:
+        logging.warning(f'No mouse ortholog found for human gene {gene}')
+
+        # Create empty results DatFrames
+        mouse_gene_df = pd.DataFrame(columns = ['Organism', 'Gene', 'Description', 'HGNC', 'Ensembl ID', 'Biotype', 'Strand'])
+        mouse_prt_df = pd.DataFrame(columns = ['AlleleID', 'AlleleSymbol', 'Transcript ID', 'Biotype', 'Exon Rank', 'Pfam Domain ID', 'Pfam Domain Name', 
+                                               'Molecular Consequence', 'Codon Switch', 'Amino Acids', 'refAA', 'varAA', 'ontologyName', 'ontologyID'])
+
+        # Return empty results
+        return mouse_gene_df, mouse_prt_df
 
     # Build orthologous gene table
-    mouse_gene_info = get_gene_info(gene, species='mouse')
+    mouse_gene_info = get_gene_info(mus_gene, species='mouse')
     mouse_gene_df = pd.DataFrame([{'Organism': 'Mouse', 
                                    'Gene': mouse_gene_info.get('name'), 
                                    'Description': mouse_gene_info.get('description'), 
@@ -569,12 +588,12 @@ def mvar_to_output(gene, assembly='GRCm39'):
 
 
     # Only retain variants with logged genomic infromation
-    mouse_select = mouse_vars[(mouse_vars['AlleleAssociatedGeneId'] == mouse_gene_info.get('HGNC')) &
-                              (mouse_vars['StartPosition'].notnull())].copy()
+    mouse_select = mus_alleles_df[(mus_alleles_df['AlleleAssociatedGeneId'] == mouse_gene_info.get('HGNC')) &
+                              (mus_alleles_df['StartPosition'].notnull())].copy()
 
     # List of alleles associated without genomic information
-    mouse_allele_extra = mouse_vars[(mouse_vars['AlleleAssociatedGeneId'] == mouse_gene_info.get('HGNC')) &
-                                    (mouse_vars['StartPosition'].isnull())]['AlleleId'].tolist()
+    mouse_allele_extra = mus_alleles_df[(mus_alleles_df['AlleleAssociatedGeneId'] == mouse_gene_info.get('HGNC')) &
+                                    (mus_alleles_df['StartPosition'].isnull())]['AlleleId'].tolist()
 
 
     # Create allele DataFrame
@@ -641,7 +660,7 @@ def mvar_to_output(gene, assembly='GRCm39'):
 
 
     # Query MouseMine for ontology associations
-    mouse_ontology_df = mouse_disease_associations(gene)
+    mouse_ontology_df = mouse_disease_associations(mus_gene)
 
     # Merge ontology associations into prt DataFrame
     mouse_prt_df = mouse_prt_df.merge(mouse_ontology_df[['primaryIdentifier', 'ontologyName', 'ontologyID']], 
@@ -675,6 +694,17 @@ def score_ortho_vars(human_gene_df, human_prt_df, mouse_gene_df, mouse_prt_df):
     Returns:
         pandas.DataFrame. Containing boolean match columns and total score for each mouse allele
     '''
+    # If Mus protein DatFrame is empty, return empty scoring DataFrame
+    if mouse_prt_df.empty:
+        # Create empty DataFrame
+        score_df = pd.DataFrame(columns=['AlleleID', 'AlleleSymbol', 'Transcript ID', 'biotype_match', 'consequence_match', 
+                                     'AA_match', 'exon_match', 'domain_match', 'disease_match', 'total_score'])
+        
+        # Log all results
+        log_results(human_gene_df, human_prt_df, mouse_gene_df, mouse_prt_df, score_df)
+
+        return score_df
+
     # Extract human variant features
     biotype = human_prt_df['Biotype'][0]
     exon_rank = human_prt_df['Exon Rank'][0]

@@ -1,2 +1,2 @@
 Transcript ID,Biotype,Exon Rank,Pfam Domain ID,Pfam Domain Name,Polyphen Prediction,Polyphen Score,Molecular Consequence,Codon Switch,Amino Acids,refAA,varAA,Associated Diseases
-ENST00000389817,protein_coding,37/39,PF00005,ABC transporter,probably_damaging,1,missense_variant,Gag/Aag,E1506K,E,K,"Hyperinsulinemic hypoglycemia, familial, 1; not provided"
+ENST00000564288,protein_coding,96/101,PF02187,Growth-Arrest-Specific Protein 2 Domain,benign,0.043,missense_variant,Tgc/Ggc,C7295G,C,G,Lissencephaly with decussation defect; Lissencephaly 9 with complex brainstem malformation; lissencephaly with brainstem hypoplasia

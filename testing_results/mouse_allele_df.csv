@@ -1,2 +1,2 @@
 Gene,AlleleID,AlleleSymbol,Chromosome,Start,End,Ref,Alt,Molecular Consequence
-Abcc8,MGI:5568409,Abcc8<sup>tm1.1Fmas</sup>,7,45755262,45755262,C,T,missense_variant
+Macf1,MGI:7258302,Macf1<sup>em1Tkato</sup>,4,123420449,123420450,C,CG,frameshift_variant

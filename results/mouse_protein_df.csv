@@ -1,5 +1,1 @@
 AlleleID,AlleleSymbol,Transcript ID,Biotype,Exon Rank,Pfam Domain ID,Pfam Domain Name,Molecular Consequence,Codon Switch,Amino Acids,refAA,varAA,ontologyName,ontologyID
-MGI:5568409,Abcc8<sup>tm1.1Fmas</sup>,ENSMUST00000033123,protein_coding,37/39,PF00005,ABC transporter,missense_variant,Gaa/Aaa,E1513K,E,K,hyperinsulinemic hypoglycemia,DOID:13317
-MGI:5568409,Abcc8<sup>tm1.1Fmas</sup>,ENSMUST00000209432,protein_coding,,PF00005,ABC transporter,upstream_gene_variant,,nan<NA>None,nan,,hyperinsulinemic hypoglycemia,DOID:13317
-MGI:5568409,Abcc8<sup>tm1.1Fmas</sup>,ENSMUST00000210655,protein_coding,24/26,PF00005,ABC transporter,missense_variant,Gaa/Aaa,E835K,E,K,hyperinsulinemic hypoglycemia,DOID:13317
-MGI:5568409,Abcc8<sup>tm1.1Fmas</sup>,ENSMUST00000210770,protein_coding,2/3,PF00005,ABC transporter,missense_variant,Gaa/Aaa,E69K,E,K,hyperinsulinemic hypoglycemia,DOID:13317

@@ -1,5 +1,1 @@
 AlleleID,AlleleSymbol,Transcript ID,biotype_match,consequence_match,AA_match,exon_match,domain_match,disease_match,total_score
-MGI:5568409,Abcc8<sup>tm1.1Fmas</sup>,ENSMUST00000033123,True,True,False,True,True,False,66.66666666666666
-MGI:5568409,Abcc8<sup>tm1.1Fmas</sup>,ENSMUST00000210655,True,True,False,False,True,False,50.0
-MGI:5568409,Abcc8<sup>tm1.1Fmas</sup>,ENSMUST00000210770,True,True,False,False,True,False,50.0
-MGI:5568409,Abcc8<sup>tm1.1Fmas</sup>,ENSMUST00000209432,True,False,False,False,True,False,33.33333333333333

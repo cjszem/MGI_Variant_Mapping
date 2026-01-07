@@ -1,2 +1,2 @@
 Organism,Gene,Description,HGNC,Ensembl ID,Biotype,Strand,Chr,Start,End,Ref,Alt
-Human,ABCC8,ATP binding cassette subfamily C member 8,HGNC:59,ENSG00000006071,protein_coding,-1,11,17394295,17394295,C,T
+Human,MACF1,microtubule actin crosslinking factor 1,HGNC:13664,ENSG00000127603,protein_coding,1,1,39468726,39468726,T,G
