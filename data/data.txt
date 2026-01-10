@@ -1,0 +1,11 @@
+VARIANT-ALLELE-MGI.tsv: MGI transcribed allele entries with genomic positions
+
+HOM_ProteinCoding.rpt: MGI gene homology
+    Should be of the format: MGI_ID    MusGeneSymbol	MusEntrezGeneID	MusHGNC_ID	HumGeneSymbol	HumEntrezGeneID
+    https://www.informatics.jax.org/downloads/reports/HOM_ProteinCoding.rpt
+
+MGI_DiseaseMouseModel.rpt: MGI disease models
+    
+
+MGI_PhenotypicAllele.rpt: MGI alleles and information (phenotypes, type)
+
