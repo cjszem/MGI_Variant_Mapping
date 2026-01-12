@@ -9,3 +9,7 @@ MGI_DiseaseMouseModel.rpt: MGI disease models
 
 MGI_PhenotypicAllele.rpt: MGI alleles and information (phenotypes, type)
 
+
+doid.obo: DOID disease data
+    https://raw.githubusercontent.com/DiseaseOntology/HumanDiseaseOntology/main/src/ontology/doid.obo
+

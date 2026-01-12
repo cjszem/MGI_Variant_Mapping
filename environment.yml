@@ -7,6 +7,8 @@ dependencies:
   - python=3.12
   - pandas
   - biopython
+  - cyvcf2
+  - obonet
   - requests
   - pip
   - pip:

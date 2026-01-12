@@ -6,6 +6,7 @@ Utility functions for Mouse and Human Variant Annotation
 '''
 
 import re
+import json
 import logging
 import requests
 import pandas as pd
@@ -26,19 +27,23 @@ logging.basicConfig(filename='mapping.log', level=logging.INFO, format='%(asctim
 # Load ClinVar VCF data
 clinvar_vcf = VCF('data/NCBI/clinvar.grch38.vcf.gz')
 
-# Load MGI Allele Data
+# Load MGI Allele data
 mus_alleles_df = pd.read_csv('./data/MGI/VARIANT-ALLELE-MGI.tsv', sep='\t')
 
-# Load MGI Gene Homology Data
+# Load MGI Gene Homology data
 homology_df = pd.read_csv('./data/MGI/HOM_ProteinCoding.rpt', 
                           names=['MGI_ID', 'MusGeneSymbol', 'MusEntrezGeneID', 'MusHGNC_ID', 'HumGeneSymbol', 'HumEntrezGeneID'], 
                           sep='\t')
 homology_dict = dict(zip(homology_df['HumGeneSymbol'], homology_df['MusGeneSymbol']))
 
-MGI_disease_df = pd.read_csv('./data/MGI/MGI_DiseaseMouseModel.rpt', 
-                             names=['DOterm', 'DOID', 'NOTmodel', 'AllelePairs', 'StrainBackground', 'AlleleSymbol', 'AlleleID',
-                                    'NumReferences', 'AlleleRepositoryID', 'AlleleRRID', 'MarkerSymbol', 'MarkerMGIid', 'GeneRepositoryID'], 
-                             sep='\t')
+# Load MGI Disease data
+disease_cols = ['DOterm', 'DOID', 'NOTmodel', 'AllelePairs', 'StrainBackground', 'AlleleSymbol', 'AlleleID',
+                'NumReferences', 'AlleleRepositoryID', 'AlleleRRID', 'MarkerSymbol', 'MarkerMGIid', 'GeneRepositoryID', '']
+MGI_disease_df = pd.read_csv('./data/MGI/MGI_DiseaseMouseModel.rpt', names=disease_cols,
+                             comment="#", header=None, sep='\t')
+
+# Load DOID mappings
+disease_mapping = json.load(open('data/DOID/doid_map.json'))
 
 
 
@@ -358,7 +363,19 @@ def batch_clinvar(variants):
         search_clinvar(chrom, start, end, ref, alt)
 
 def search_clinvar(chrom, start, end, ref, alt):
+    '''
+    Searches ClinVar VCF for disease associations with a given variant.
 
+    Parameters:
+        chrom: str. Chromosome of variant.
+        start: int. Genomic location of variant start.
+        end: int. Genomic location of variant end.
+        ref: string. Reference allele.
+        alt: string. Alternate allele.
+    
+    Returns:
+        list. containing: chromosome, start, end, ref, alt, diseases
+    '''
     # Craft region string
     region = f'{chrom}:{start}-{end}'
 
@@ -382,17 +399,17 @@ def search_clinvar(chrom, start, end, ref, alt):
 
 def fetch_mus_alleles(MGI_gene_ids):
     '''
-    Fetches all Mouse Alleles with human models for all genes from list of MGI_gene_ids
+    Fetches all Mouse alleles with human models for all genes from list of MGI_gene_ids.
     
     Parameters:
-        MGI_gene_ids: list of str. A list of all MGI_gene_ids to retur strings for
+        MGI_gene_ids: list of str. A list of all MGI_gene_ids to retur strings for.
     
     Returns:
         DataFrame. 
     '''
     # Only retain variants with logged genomic information
-    mouse_select = mus_alleles_df[(mus_alleles_df['AlleleAssociatedGeneId'] in MGI_gene_ids) &
-                              (mus_alleles_df['StartPosition'].notnull())].copy()
+    mouse_select = mus_alleles_df[(mus_alleles_df['AlleleAssociatedGeneId'].isin(MGI_gene_ids)) &
+                                  (mus_alleles_df['StartPosition'].notnull())]
 
     # Create allele DataFrame
     mouse_allele_df = pd.DataFrame()
@@ -413,14 +430,22 @@ def fetch_mus_alleles(MGI_gene_ids):
 
 def fetch_mus_disease_map(MGI_allele_ids):
     '''
-    Docstring for fetch_mus_disease_associations
+    Fetches all Mouse disease associations with human models for all alleles from list of MGI_gene_ids.
     
-    :param MGI_allele_ids: Description
+    Parameters:
+        MGI_gene_ids: list of str. A list of all MGI_gene_ids to return strings for.
+    
+    Returns:
+        DataFrame. 
     '''
 
-    filtered_disease_df = MGI_disease_df[MGI_disease_df['MarkerMGIid'].isin(MGI_allele_ids)]
+    filtered_disease_df = MGI_disease_df[MGI_disease_df['AlleleID'].isin(MGI_allele_ids)]
 
-    mgi_disease_dict = filtered_disease_df.groupby('MarkerMGIid')['DOterm', 'DOID'].apply(list).to_dict()
+    mgi_disease_dict  = (filtered_disease_df.groupby('AlleleID')['DOterm'].apply(set).to_dict())
+    
+    print(mgi_disease_dict)
+    
+    return mgi_disease_dict
 
 def mouse_disease_associations(gene):
     '''
@@ -524,6 +549,20 @@ def get_doid_name(disease):
 
     return {'label': doc.get('label'),
             'DOID': doc.get('obo_id')}
+
+def fetch_doid_name(disease):
+    '''
+    Search disease name synonyms for DO name.
+
+    Parameters:
+        disease: string. Disease name to convert.
+
+    Returns:
+        string. DO disease name. Returns None if None found.
+    '''
+    doid_name = disease_mapping.get(disease.lower())
+
+    return doid_name
 
 def log_results(hum_gene_df, hum_protein_df, mouse_gene_df, mouse_prt_df, var_scores_df):
     '''
@@ -720,8 +759,7 @@ def mvar_to_output(gene, assembly='GRCm39'):
                                    'Strand': mouse_gene_info.get('strand')}])
 
     # Extract gene ids
-    MGI_gene_ids = mouse_gene_df['MGI ID']
-
+    MGI_gene_ids = mouse_gene_df['MGI ID'].unique()
 
     # Fetch mouse alleles
     mouse_allele_df = fetch_mus_alleles(MGI_gene_ids)
@@ -751,6 +789,17 @@ def mvar_to_output(gene, assembly='GRCm39'):
     mouse_prt_df['consequence_terms'] = mouse_prt_df['consequence_terms'].apply(lambda x: ','.join(x) if isinstance(x, list) else x)
 
 
+    # Query MouseMine for ontology associations
+    mouse_disease_map = fetch_mus_disease_map(mouse_prt_df['AlleleID'].unique())
+
+    # Drop alleles without disease associations
+    mouse_prt_df = mouse_prt_df[mouse_prt_df['AlleleID'].isin(mouse_disease_map.keys())]\
+    
+    # Map diseases to mouse alleles
+    mouse_prt_df['Disease Association'] = mouse_prt_df['AlleleID'].map(mouse_disease_map)
+    mouse_prt_df['Disease Association'] = mouse_prt_df['Disease Association'].apply(lambda x: ','.join(x) if isinstance(x, set) else x)
+
+
     # Fetch domain names
     for domain in mouse_prt_df['Domain'].unique():
         if domain == None:
@@ -763,16 +812,12 @@ def mvar_to_output(gene, assembly='GRCm39'):
     # Rearrange and rename columns
     mouse_prt_df = mouse_prt_df[['AlleleID', 'AlleleSymbol', 'transcript_id', 'biotype', 
                                  'exon', 'Domain', 'Pfam Domain Name', 'consequence_terms', 
-                                 'codons', 'amino_acids', 'refAA', 'varAA']]
+                                 'codons', 'amino_acids', 'refAA', 'varAA', 'Disease Association']]
     
     mouse_prt_df.rename(columns={'transcript_id': 'Transcript ID', 'biotype': 'Biotype', 'exon': 'Exon Rank', 
                                  'Domain': 'Pfam Domain ID', 'consequence_terms': 'Molecular Consequence', 
                                  'codons': 'Codon Switch', 'amino_acids': 'Amino Acids'}, inplace=True)
-
-
-    # Query MouseMine for ontology associations
-    mouse_disease_map = fetch_mus_disease_map(mouse_prt_df['AlleleID'])
-    mouse_prt_df[['Disease Association', 'DOID']] = mouse_prt_df['AlleleID'].map(mouse_disease_map)
+    
 
     # Save debugging tables to CSVs
     mouse_allele_df.to_csv('./testing_results/mouse_allele_df.csv', index=False)
@@ -814,31 +859,36 @@ def score_output(human_gene_df, human_prt_df, mouse_gene_df, mouse_prt_df):
     exon_rank = human_prt_df['Exon Rank'][0]
     domain = human_prt_df['Pfam Domain ID'][0]
     consequence = human_prt_df['Molecular Consequence'][0]
+    refAA = human_prt_df['refAA'][0]
+    altAA = human_prt_df['varAA'][0]
     amino_acids = human_prt_df['Amino Acids'][0]
     diseases = human_prt_df['Associated Diseases'][0]
 
     # Convert human diseases to DOID names
-    diseases_doid = []
+    diseases_doid = set()
     # Go through each correlated disease
     for disease in diseases.split('; '):
-        doid = get_doid_name(disease)
+        doid = fetch_doid_name(disease)
         if doid:
-            diseases_doid.append(doid['label']) # append disease name if found
+            diseases_doid.add(doid) # append disease name if found
+        else:
+            diseases_doid.add(disease) # append original disease name if no DOID found
     
     # Create boolean score dataframe
     score_df = pd.DataFrame()
     score_df['AlleleID'] = mouse_prt_df['AlleleID']
     score_df['AlleleSymbol'] = mouse_prt_df['AlleleSymbol']
     score_df['Transcript ID'] = mouse_prt_df['Transcript ID']
-    score_df['biotype_match'] = mouse_prt_df['Biotype'].apply(lambda x: x == biotype)
-    score_df['consequence_match'] = mouse_prt_df['Molecular Consequence'].apply(lambda x: x == consequence)
-    score_df['AA_match'] = mouse_prt_df['Amino Acids'].apply(lambda x: x == amino_acids)
-    score_df['exon_match'] = mouse_prt_df['Exon Rank'].apply(lambda x: x == exon_rank)
+    score_df['biotype_match'] = mouse_prt_df['Biotype'] == biotype
+    score_df['consequence_match'] = mouse_prt_df['Molecular Consequence'] == consequence
+    score_df['AA_match'] = (mouse_prt_df['refAA'] == refAA) & (mouse_prt_df['varAA'] == altAA)
+    score_df['AA_Position_match'] = mouse_prt_df['Amino Acids'] == amino_acids
+    score_df['exon_match'] = mouse_prt_df['Exon Rank'] == exon_rank
     score_df['domain_match'] = mouse_prt_df['Pfam Domain ID'].apply(lambda x: (x == domain) if (x is not None and domain is not None) else None)
-    score_df['disease_match'] = mouse_prt_df['ontologyName'].apply(lambda x: x in diseases_doid)
+    score_df['disease_match'] = mouse_prt_df['Disease Association'].isin(set(diseases_doid))
 
     # columns which can be attributed to score
-    match_cols = ['biotype_match', 'consequence_match', 'AA_match', 'exon_match', 'domain_match', 'disease_match']
+    match_cols = ['biotype_match', 'consequence_match', 'AA_match', 'AA_Position_match', 'exon_match', 'domain_match', 'disease_match']
 
     # Calculate precentage of hits
     score_df['total_score'] = score_df[match_cols].sum(axis=1) / score_df[match_cols].notna().sum(axis=1) * 100
@@ -854,7 +904,7 @@ def score_output(human_gene_df, human_prt_df, mouse_gene_df, mouse_prt_df):
 
     return score_df
 
-# ---- Batch Main Functions
+# ---- Batch Main Functions ----
 def batch_hvar_to_output(variants, assembly='GRCh38'):
     '''
     Annotate a human variant using local gene metadata, Ensembl VEP, and ClinVar.
@@ -964,218 +1014,6 @@ def batch_hvar_to_output(variants, assembly='GRCh38'):
     
     return gene_df, protein_df
 
-def batch_mvar_to_output(variants, assembly='GRCm39'):
-    '''
-    Annotate a mouse variant using local gene metadata, Ensembl VEP, and MouseMine.
-
-    This function performs the following steps:
-        1. Fetch mouse gene metadata.
-        2. Identify all variants for the gene in MGI local database.
-        3. Call Ensembl VEP for each variant → transcript-level annotations.
-        4. Retrieve domain names from InterPro.
-        5. Query MouseMine for ontology annotations.
-
-    Parameters
-        gene: string. Gene symbol to extract info for.
-        assembly : string, optional. Genome assembly. Only "GRCm39" is supported.
-
-    Returns
-        gene_df: pandas.DataFrame. Gene-level metadata and input variant summary.
-        protein_df: pandas.DataFrame. Transcript-level information.
-    '''
-    # Check assembly
-    if assembly != 'GRCm39':
-        raise ValueError('Assembly must be GRCm39')
-    
-    # Extract Mus gene symbol
-    mus_gene = homology_dict.get(gene, None)
-    
-    # Catch for is there is no orthologous Mus gene found
-    if mus_gene is None:
-        logging.warning(f'No mouse ortholog found for human gene {gene}')
-
-        # Create empty results DatFrames
-        mouse_gene_df = pd.DataFrame(columns = ['Organism', 'Gene', 'Description', 'HGNC', 'Ensembl ID', 'Biotype', 'Strand'])
-        mouse_prt_df = pd.DataFrame(columns = ['AlleleID', 'AlleleSymbol', 'Transcript ID', 'Biotype', 'Exon Rank', 'Pfam Domain ID', 'Pfam Domain Name', 
-                                               'Molecular Consequence', 'Codon Switch', 'Amino Acids', 'refAA', 'varAA', 'ontologyName', 'ontologyID'])
-
-        # Return empty results
-        return mouse_gene_df, mouse_prt_df
-
-    # Build orthologous gene table
-    mouse_gene_info = get_gene_info(mus_gene, species='mouse')
-    mouse_gene_df = pd.DataFrame([{'Organism': 'Mouse', 
-                                   'Gene': mouse_gene_info.get('name'), 
-                                   'Description': mouse_gene_info.get('description'), 
-                                   'MGI id': mouse_gene_info.get('MGI_id'), 
-                                   'Ensembl ID': mouse_gene_info.get('ENSMBL_id'), 
-                                   'Biotype': mouse_gene_info.get('biotype'), 
-                                   'Strand': mouse_gene_info.get('strand')}])
-
-
-    # Only retain variants with logged genomic infromation
-    mouse_select = mus_alleles_df[(mus_alleles_df['AlleleAssociatedGeneId'] == mouse_gene_info.get('HGNC')) &
-                              (mus_alleles_df['StartPosition'].notnull())].copy()
-
-    # List of alleles associated without genomic information
-    mouse_allele_extra = mus_alleles_df[(mus_alleles_df['AlleleAssociatedGeneId'] == mouse_gene_info.get('HGNC')) &
-                                    (mus_alleles_df['StartPosition'].isnull())]['AlleleId'].tolist()
-
-
-    # Create allele DataFrame
-    mouse_allele_df = pd.DataFrame()
-    old_cols = ['AlleleAssociatedGeneSymbol', 'AlleleId', 'AlleleSymbol', 'Chromosome', 'StartPosition', 
-                'EndPosition', 'SequenceOfReference', 'SequenceOfVariant'] # Column names in mouse_select
-    new_cols = ['Gene', 'AlleleID', 'AlleleSymbol', 'Chromosome', 'Start', 'End', 'Ref', 'Alt'] # Corresponding column names for mouse_allele_df
-    mouse_allele_df[new_cols] = mouse_select[old_cols] # Update column names
-
-
-    # Extract primary Molecular Consequence term
-    mouse_allele_df['Molecular Consequence'] = mouse_select['MostSevereConsequenceName'].str.split(',').str[0]
-
-
-    # Convert coordinates to integers
-    mouse_allele_df['Start'] = mouse_allele_df['Start'].astype(int)
-    mouse_allele_df['End'] = mouse_allele_df['End'].astype(int)
-
-
-    # Query VEP for each variant
-    mouse_vep_df = pd.DataFrame()
-    for i, row in mouse_allele_df.iterrows():
-        variant_vep = get_vep_data(row['Chromosome'], row['Start'], row['End'], row['Alt'], species='mouse')
-        variant_vep['AlleleID'] = row['AlleleID']
-        variant_vep['AlleleSymbol'] = row['AlleleSymbol']
-        mouse_vep_df = pd.concat([mouse_vep_df, variant_vep], ignore_index=True)
-    
-    # Keep only protein coding transcript consequences
-    mouse_prt_df = mouse_vep_df[mouse_vep_df['biotype'] == 'protein_coding'].copy()
-    
-
-    # Split amino_acids to REFAA and VARAA if in X/Y format
-    aa_split = mouse_prt_df['amino_acids'].astype(str).str.split('/', expand=True)
-    mouse_prt_df['refAA'] = aa_split[0]
-    mouse_prt_df['varAA'] = aa_split[1]
-
-    # Add protein location of amino_acids
-    mouse_prt_df['protein_start'] = mouse_prt_df['protein_start'].astype(pd.Int64Dtype())
-    mouse_prt_df['amino_acids'] = mouse_prt_df.apply(lambda row: f"{row['refAA']}{row['protein_start']}{row['varAA']}", axis=1)
-
-    # Fix consequence formating - originally returned as a list
-    mouse_prt_df['consequence_terms'] = mouse_prt_df['consequence_terms'].apply(lambda x: ','.join(x) if isinstance(x, list) else x)
-
-
-    # Fetch domain names
-    for domain in mouse_prt_df['Domain'].unique():
-        if domain == None:
-            dom_name = None
-        else:
-            dom_name = get_domain_name(domain)
-        mouse_prt_df.loc[mouse_prt_df['Domain'] == domain, 'Pfam Domain Name'] = dom_name
-
-
-    # Rearrange and rename columns
-    mouse_prt_df = mouse_prt_df[['AlleleID', 'AlleleSymbol', 'transcript_id', 'biotype', 
-                                 'exon', 'Domain', 'Pfam Domain Name', 
-                                 'consequence_terms', 'codons', 'amino_acids', 
-                                 'refAA', 'varAA']]
-    
-    mouse_prt_df.rename(columns={'transcript_id': 'Transcript ID', 'biotype': 'Biotype', 
-                                 'exon': 'Exon Rank', 'Domain': 'Pfam Domain ID', 
-                                 'consequence_terms': 'Molecular Consequence', 
-                                 'codons': 'Codon Switch', 'amino_acids': 'Amino Acids'}, inplace=True)
-
-
-    # Query MouseMine for ontology associations
-    mouse_ontology_df = mouse_disease_associations(mus_gene)
-
-    # Merge ontology associations into prt DataFrame
-    mouse_prt_df = mouse_prt_df.merge(mouse_ontology_df[['primaryIdentifier', 'ontologyName', 'ontologyID']], 
-                                      left_on='AlleleID', right_on='primaryIdentifier')
-    mouse_prt_df = mouse_prt_df.drop(columns=['primaryIdentifier'])
-
-    # Save debugging tables to CSVs
-    mouse_ontology_df.to_csv('./testing_results/mouse_onntology_df.csv', index=False)
-    mouse_allele_df.to_csv('./testing_results/mouse_allele_df.csv', index=False)
-
-    # Print resulting tables
-    print(mouse_gene_df)
-    print('----------')
-    print(mouse_allele_df)
-    print('----------')
-    print(mouse_prt_df)
-    print('----------')
-    print(mouse_allele_extra)
-    print('----------')
-
-    return mouse_gene_df, mouse_prt_df
-
-def batch_score_output(human_gene_df, human_prt_df, mouse_gene_df, mouse_prt_df):
-    '''
-    Score orthologous mouse variant similarity against human variant.
-
-    Parameter:
-        human_prt_df: pandas.DataFrame. A single-row DataFrame describing the human variant.
-        mouse_prt_df : pandas.DataFrame. A multi-row DataFrame of all orthologous mouse alleles to compare.
-
-    Returns:
-        pandas.DataFrame. Containing boolean match columns and total score for each mouse allele
-    '''
-    # If Mus protein DatFrame is empty, return empty scoring DataFrame
-    if mouse_prt_df.empty:
-        # Create empty DataFrame
-        score_df = pd.DataFrame(columns=['AlleleID', 'AlleleSymbol', 'Transcript ID', 'biotype_match', 'consequence_match', 
-                                     'AA_match', 'exon_match', 'domain_match', 'disease_match', 'total_score'])
-        
-        # Log all results
-        log_results(human_gene_df, human_prt_df, mouse_gene_df, mouse_prt_df, score_df)
-
-        return score_df
-
-    # Extract human variant features
-    biotype = human_prt_df['Biotype'][0]
-    exon_rank = human_prt_df['Exon Rank'][0]
-    domain = human_prt_df['Pfam Domain ID'][0]
-    consequence = human_prt_df['Molecular Consequence'][0]
-    amino_acids = human_prt_df['Amino Acids'][0]
-    diseases = human_prt_df['Associated Diseases'][0]
-
-    # Convert human diseases to DOID names
-    diseases_doid = []
-    # Go through each correlated disease
-    for disease in diseases.split('; '):
-        doid = get_doid_name(disease)
-        if doid:
-            diseases_doid.append(doid['label']) # append disease name if found
-    
-    # Create boolean score dataframe
-    score_df = pd.DataFrame()
-    score_df['AlleleID'] = mouse_prt_df['AlleleID']
-    score_df['AlleleSymbol'] = mouse_prt_df['AlleleSymbol']
-    score_df['Transcript ID'] = mouse_prt_df['Transcript ID']
-    score_df['biotype_match'] = mouse_prt_df['Biotype'].apply(lambda x: x == biotype)
-    score_df['consequence_match'] = mouse_prt_df['Molecular Consequence'].apply(lambda x: x == consequence)
-    score_df['AA_match'] = mouse_prt_df['Amino Acids'].apply(lambda x: x == amino_acids)
-    score_df['exon_match'] = mouse_prt_df['Exon Rank'].apply(lambda x: x == exon_rank)
-    score_df['domain_match'] = mouse_prt_df['Pfam Domain ID'].apply(lambda x: (x == domain) if (x is not None and domain is not None) else None)
-    score_df['disease_match'] = mouse_prt_df['ontologyName'].apply(lambda x: x in diseases_doid)
-
-    # columns which can be attributed to score
-    match_cols = ['biotype_match', 'consequence_match', 'AA_match', 'exon_match', 'domain_match', 'disease_match']
-
-    # Calculate precentage of hits
-    score_df['total_score'] = score_df[match_cols].sum(axis=1) / score_df[match_cols].notna().sum(axis=1) * 100
-
-    # Sort results by score
-    score_df = score_df.sort_values(by='total_score', ascending=False)
-
-    print(score_df)
-    print('----------')
-
-    # Log and save results
-    log_results(human_gene_df, human_prt_df, mouse_gene_df, mouse_prt_df, score_df)
-
-    return score_df
-
 
 if __name__ == '__main__':
 
@@ -1185,6 +1023,8 @@ if __name__ == '__main__':
     ref = 'C'
     alt = 'T'
 
-    results = search_clinvar(chrom, start, end, ref, alt)
+    results1, r2 = mvar_to_output('ACVR1', assembly='GRCm39')
 
-    print(results)
+    print(results1)
+
+    print(r2)
