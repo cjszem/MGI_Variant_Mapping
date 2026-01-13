@@ -45,7 +45,9 @@ MGI_disease_df = pd.read_csv('./data/MGI/MGI_DiseaseMouseModel.rpt', names=disea
 # Load DOID mappings
 disease_mapping = json.load(open('data/DOID/doid_map.json'))
 
-
+# Load Ensembl gene data
+mouse_gene_pqt = pd.read_parquet('data/Ensembl/mouse_gene_data.parquet')
+human_gene_pqt = pd.read_parquet('data/Ensembl/human_gene_data.parquet')
 
 # ---- Helper functions ----
 def log_query(gene, chrom, start, end, ref, alt):
@@ -63,13 +65,13 @@ def log_batch_query(variants):
 def process_batch_query(input):
     '''
     Processes a string resulting from the batch input of variants with formatting:
-    gene:chromosome:start-end:ref/allele
+    chromosome:start-end:ref/allele
 
     Parameters:
-
+        input: string. Multiline string containg all variants to process.
     '''
     # Regex pattern to match each line: gene:chromosome:start-end:ref/allele
-    pattern = r'^(\w+):(\w+):(\d+)-(\d+):([ACGTacgt]+)/([ACGTacgt]+)$'
+    pattern = r'^(\w+):(\d+)-(\d+):([ACGTacgt]+)/([ACGTacgt]+)$'
 
     variants = []
     # Go through each line
@@ -80,13 +82,12 @@ def process_batch_query(input):
         # Extract inputted variant fields
         match = re.match(pattern, line)
         if match:
-            variants.append({'gene': match.group(1),
-                             'chrom': match.group(2),
-                             'start': int(match.group(3)),
-                             'stop': int(match.group(4)),
-                             'ref': match.group(5),
-                             'alt': match.group(6)})
-
+            variants.append({'chrom': match.group(1),
+                             'start': int(match.group(2)),
+                             'stop': int(match.group(3)),
+                             'ref': match.group(4),
+                             'alt': match.group(5)})
+        
     # Create pandas dataframe
     variants = pd.DataFrame(variants)
     variants.to_csv('./testing_results/batch_variants.csv', index=False)
@@ -142,6 +143,38 @@ def get_gene_info(gene, species='human'):
         ValueError(f'Ensembl Gene Info Request Failed: {e}')
 
     return gene_info
+
+def fetch_gene_info(genes, species='human'):
+    '''
+    Fetch gene info from saved parquets in /data/Ensembl/ for a lsit of gene symbols.
+
+    Parameters:
+        genes: list of strings. Gene symbols to extract info for.
+        species: string. 'human' or 'mouse'. Defaults to 'human'.
+
+    Returns:
+        DataFrame. Containins HGNC ID, Ensembl ID, name, strand, biotype, and description.
+    '''
+    # Assign correct parquet based on species
+    if species == 'human': pqt = human_gene_pqt
+    elif species == 'mouse': pqt = mouse_gene_pqt
+
+    # Subset parquet to requested genes
+    subset = pqt[pqt['Name'].isin(genes)]
+
+    # Preserve order of input genes
+    subset = subset.set_index('Name').reindex(genes).reset_index()
+
+    # Extract description and accession
+    subset[['Description', 'Accession']] = subset['description'].str.extract(r'^(.*?) \[Source:.+ Symbol.+Acc:(.+)\]$')
+
+    # Clean DataFrame
+    subset.drop('description', axis=1, inplace=True)
+    subset.rename(columns={'Name': 'Gene', 'biotype': 'Biotype', 'seqid': 'Chromosome', 'start': 'Start', 
+                           'end': 'End', 'strand': 'Strand', 'gene_id': 'Ensembl_ID'}, inplace=True)
+    subset = subset[['Gene', 'Description', 'Biotype', 'Chromosome', 'Start', 'End', 'Strand', 'Ensembl_ID', 'Accession']]
+
+    return subset
 
 def get_vep_data(chromosome, start, end, alt, species='human'):
     '''
@@ -226,6 +259,145 @@ def get_vep_data(chromosome, start, end, alt, species='human'):
     except Exception as e:
         logging.error('VEP request failed:', e)
         return pd.DataFrame()
+
+def prepare_hgvs(variants):
+    '''
+    Converts a DataFrame of variants into a list of HGHVS notations for VEP querying
+    
+    Parameters:
+        variants: DataFrame. containing chrom, start, ref, alt.
+
+    Returns:
+        list of strings. HGVS notations (chrom:g.startRef>Alt).
+    '''
+    hgvs_list = (variants['chrom'].astype(str) + ':g.' + variants['start'].astype(str) + variants['ref'] + '>' + variants['alt']).tolist()
+
+    return hgvs_list
+
+def fetch_vep_data(variants, species):
+    '''
+    Use Ensembl VEP REST endpoint to get consequence data.
+
+    Parameters:
+        chrom: str. Chromosome of variant.
+        start: int. Genomic location of variant start.
+        end: int. Genomic location of variant end.
+        alt: string. Alternate allele
+        species: string. Species to extract gene from. Defaults to 'human'.
+
+    Returns:
+        DataFrame.
+    '''
+    # Construct URL extension
+    ext = f'/vep/{species}/hgvs?numbers=1&domains=1'
+
+    # Only select MANE transcript if human
+    if species == 'human':
+        ext += '&pick_order=mane_select,length&pick=1'
+
+    headers={'Content-Type': 'application/json', 'Accept': 'application/json'}
+    hgvs_dict = {'hgvs_notations': variants}
+
+    try:
+        # Make POST request
+        r = requests.post(ensembl_base_url + ext, headers=headers, json=hgvs_dict, timeout=30)
+        r.raise_for_status()
+        data = r.json()
+
+        if not data:
+            logging.warning("No VEP data returned")
+            return pd.DataFrame()
+
+        # Process each variant
+        all_dfs = []
+        for variant in data:
+            consequences = variant.get('transcript_consequences', [])
+            if not consequences:
+                logging.warning(f"No transcript consequences for {variant.get('input')}")
+                continue
+
+            # Extract desired columns
+            df = pd.json_normalize(consequences)
+            keep = ['gene_symbol', 'transcript_id', 'polyphen_prediction', 'polyphen_score',
+                    'amino_acids', 'protein_start', 'consequence_terms',
+                    'exon', 'domains', 'codons', 'impact', 'biotype']
+            df = df[[col for col in keep if col in df.columns]]
+
+            # Extract Pfam domain names
+            pfam = None
+            if 'domains' in df.columns and len(df['domains']) > 0:
+                for domain in df['domains'][0]:
+                    if isinstance(domain, dict) and domain.get('db') == 'Pfam':
+                        pfam = domain.get('name')
+                        break
+
+                if pfam is None: logging.warning('VEP domain failure: no pfam database in response')
+
+            else: logging.warning('VEP domain failure: no "domains" information in response')
+            
+            # Add Pfam domain and drop domain dictionary
+            df['Domain'] = pfam
+            df.drop('domains', axis=1, inplace=True)
+
+            # Add variant identifier for traceability
+            df['HGVS'] = variant.get('input')
+
+            all_dfs.append(df)
+
+        # Combine all variant DataFrames
+        vep_data = pd.concat(all_dfs, ignore_index=True) if all_dfs else pd.DataFrame()
+
+        vep_data.to_csv('./testing_results/vep_output.csv', index=False)
+
+        return vep_data
+    
+    # Handle request failure
+    except Exception as e:
+        logging.error('VEP request failed:', e)
+        return pd.DataFrame()
+
+def prepare_vep_output(vep_df):
+    '''
+
+    '''
+    # Split amino_acids to REFAA and VARAA if in X/Y format
+    aa_split = vep_df['amino_acids'].astype(str).str.split('/', expand=True)
+    vep_df['refAA'] = aa_split[0]
+    vep_df['varAA'] = aa_split[1]
+
+
+    # Add protein location of amino_acids
+    vep_df['protein_start'] = vep_df['protein_start'].astype(pd.Int64Dtype())
+    vep_df['amino_acids'] = vep_df.apply(lambda row: f"{row['refAA']}{row['protein_start']}{row['varAA']}", axis=1)
+
+
+    # Merge consequence terms into a single string
+    vep_df['consequence_terms'] = vep_df['consequence_terms'].apply(lambda x: ','.join(x) if isinstance(x, list) else x)
+
+
+    # Fetch domain names
+    for domain in vep_df['Domain'].unique():
+        if domain == None:
+            dom_name = None
+        else:
+            dom_name = get_domain_name(domain)
+        vep_df.loc[vep_df['Domain'] == domain, 'domain_name'] = dom_name
+
+    
+    # Create protein DataFrame
+    keep = ['transcript_id', 'biotype', 'exon', 'Domain', 'domain_name', 'polyphen_prediction', 
+                'polyphen_score', 'consequence_terms', 'codons', 'amino_acids', 'refAA', 'varAA']
+    protein_df = vep_df[keep]
+
+    # Update column names
+    protein_df.rename(columns={'transcript_id': 'Transcript ID', 'biotype': 'Biotype', 
+                       'exon': 'Exon Rank', 'Domain': 'Pfam Domain ID', 
+                       'domain_name': 'Pfam Domain Name', 'polyphen_prediction': 'Polyphen Prediction', 
+                       'polyphen_score': 'Polyphen Score', 'consequence_terms': 'Molecular Consequence', 
+                       'codons': 'Codon Switch', 'amino_acids': 'Amino Acids', 
+                       'refAA': 'refAA', 'varAA': 'varAA'}, inplace=True)
+    
+    return protein_df
 
 def get_domain_name(pfam_domain_id):
     '''
@@ -909,85 +1081,35 @@ def batch_hvar_to_output(variants, assembly='GRCh38'):
     '''
     Annotate a human variant using local gene metadata, Ensembl VEP, and ClinVar.
 
-    This function performs the following steps:
-        1. Fetch human gene metadata for the specified gene.
-        2. Query Ensembl VEP REST API for transcript-level consequences.
-        3. Process amino acid changes (ref/alt AA, protein position).
-        4. Retrieve Pfam/InterPro domain names for protein annotations.
-        5. Build two structured DataFrames:
-                - gene_df: basic gene + variant information.
-                - protein_df: transcript-level VEP annotations.
-        6. Fetch ClinVar associations (protein changes → disease names).
-        7. Map ClinVar diseases into the per-transcript annotations.
-
     Parameters
-        gene: string. Gene symbol to extract info for.
-        chrom: str. Chromosome of variant.
-        start: int. Genomic location of variant start.
-        end: int. Genomic location of variant end.
-        ref: string. Reference allele.
-        alt: string. Alternate allele.
-        assembly: string, optional. Genome assembly. Only "GRCh38" is supported.
 
     Returns
         gene_df: pandas.DataFrame. Gene-level metadata and input variant summary.
         protein_df: pandas.DataFrame. Transcript-level information.
     '''
-    # Log the query
-    log_query(variants)
-
     # Check assembly
     if assembly != 'GRCh38':
         logging.info(f'Assembly Error: {assembly} is not supported. Only GRCh38 is supported.')
         raise ValueError('Assembly must be GRCh38')
 
-    # Build gene table
-   
-
-    # Use VEP to get pathogenicity and protein info
-    vep_df = get_vep_data(chrom, start, end, alt)
-    vep_df = vep_df[vep_df['biotype'] == 'protein_coding']
-
-
-    # Split amino_acids to REFAA and VARAA if in X/Y format
-    aa_split = vep_df['amino_acids'].astype(str).str.split('/', expand=True)
-    vep_df['refAA'] = aa_split[0]
-    vep_df['varAA'] = aa_split[1]
-
-
-    # Add protein location of amino_acids
-    vep_df['protein_start'] = vep_df['protein_start'].astype(pd.Int64Dtype())
-    vep_df['amino_acids'] = vep_df.apply(lambda row: f"{row['refAA']}{row['protein_start']}{row['varAA']}", axis=1)
-
-
-    # Merge consequence terms into a single string
-    vep_df['consequence_terms'] = vep_df['consequence_terms'].apply(lambda x: ','.join(x) if isinstance(x, list) else x)
-
-
-    # Fetch domain names
-    for domain in vep_df['Domain'].unique():
-        if domain == None:
-            dom_name = None
-        else:
-            dom_name = get_domain_name(domain)
-        vep_df.loc[vep_df['Domain'] == domain, 'domain_name'] = dom_name
-
+    # Log the query
+    log_batch_query(variants)
     
-    # Create protein DataFrame
-    keep = ['transcript_id', 'biotype', 'exon', 'Domain', 'domain_name', 'polyphen_prediction', 
-                'polyphen_score', 'consequence_terms', 'codons', 'amino_acids', 'refAA', 'varAA']
-    protein_df = vep_df[keep]
+    # Prepare HGVS notation
+    hgvs_list = prepare_hgvs(variants)
 
-    # Update column names
-    protein_df.rename(columns={'transcript_id': 'Transcript ID', 'biotype': 'Biotype', 
-                       'exon': 'Exon Rank', 'Domain': 'Pfam Domain ID', 
-                       'domain_name': 'Pfam Domain Name', 'polyphen_prediction': 'Polyphen Prediction', 
-                       'polyphen_score': 'Polyphen Score', 'consequence_terms': 'Molecular Consequence', 
-                       'codons': 'Codon Switch', 'amino_acids': 'Amino Acids', 
-                       'refAA': 'refAA', 'varAA': 'varAA'}, inplace=True)
+    # Query VEP
+    vep_df = fetch_vep_data(hgvs_list)
+
+    # Build gene table
+    genes = vep_df['gene_symbol'].unique()
+    gene_df = fetch_gene_info(genes, species='human')
+
+    # Clean VEP output into protein DataFrame
+    protein_df = prepare_vep_output(vep_df)
 
     # Disease Associations
-    clinvar_ids = get_clinvar_ids(gene, start)
+    clinvar_ids = batch_clinvar(variants)
 
     # Build lookup dictionary of protein change and consequence to diseases
     disease_dict = {}

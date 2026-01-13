@@ -90,8 +90,8 @@ with single_tab:
         st.dataframe(var_scores_df, hide_index=True)
 
 with batch_tab:
-    batch_input = st.text_area('Input all variants here, one per line, in the format: gene:chromosome:start-end:ref/alt', key='input',
-                               height=300, placeholder='Example:\nACVR1:2:157774114-157774114:C/T\nMACF1:1:39468726-39468726:T/G')
+    batch_input = st.text_area('Input all variants here, one per line, in the format: chromosome:start-end:ref/alt', key='input',
+                               height=300, placeholder='Example:\n2:157774114-157774114:C/T\n1:39468726-39468726:T/G')
 
     v = process_batch_query(batch_input)
 
