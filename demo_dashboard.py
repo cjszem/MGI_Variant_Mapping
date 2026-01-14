@@ -1,7 +1,7 @@
 import streamlit as st
 import streamlit.components.v1 as components
 import base64
-from util import hvar_to_output, mvar_to_output, score_output, process_batch_query
+from util import hvar_to_output, mvar_to_output, score_output, process_batch_query, batch_hvar_to_output
 
 
 # ---- CONFIGURATION ----
@@ -58,11 +58,11 @@ with single_tab:
         components.html(warning_html, height=50)
 
         # Submit button
-        submit = st.button('Submit Query')
+        submit_single = st.button('Submit Query')
 
 
     # ---- OUTPUT ----
-    if submit:
+    if submit_single:
 
         human_gene_df, human_prt_df = hvar_to_output(gene, chrom, start, stop, ref, alt)
         mouse_gene_df, mouse_prt_df = mvar_to_output(gene)
@@ -93,6 +93,12 @@ with batch_tab:
     batch_input = st.text_area('Input all variants here, one per line, in the format: chromosome:start-end:ref/alt', key='input',
                                height=300, placeholder='Example:\n2:157774114-157774114:C/T\n1:39468726-39468726:T/G')
 
-    v = process_batch_query(batch_input)
+    # Submit button
+    submit_batch = st.button('Submit Query', key='batch')
 
-    print(v.size)
+    if submit_batch:
+        variants = process_batch_query(batch_input)
+        hum_gene_df, hum_prt_df = batch_hvar_to_output(variants)
+
+        st.dataframe(hum_gene_df, hide_index=True)
+        st.dataframe(hum_prt_df, hide_index=True)

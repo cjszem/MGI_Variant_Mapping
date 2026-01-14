@@ -385,16 +385,15 @@ def prepare_vep_output(vep_df):
 
     
     # Create protein DataFrame
-    keep = ['transcript_id', 'biotype', 'exon', 'Domain', 'domain_name', 'polyphen_prediction', 
-                'polyphen_score', 'consequence_terms', 'codons', 'amino_acids', 'refAA', 'varAA']
+    keep = ['gene_symbol', 'transcript_id', 'HGVS', 'biotype', 'exon', 'Domain', 'domain_name', 'polyphen_prediction', 
+            'polyphen_score', 'consequence_terms', 'codons', 'amino_acids', 'refAA', 'varAA']
     protein_df = vep_df[keep]
 
     # Update column names
-    protein_df.rename(columns={'transcript_id': 'Transcript ID', 'biotype': 'Biotype', 
-                       'exon': 'Exon Rank', 'Domain': 'Pfam Domain ID', 
-                       'domain_name': 'Pfam Domain Name', 'polyphen_prediction': 'Polyphen Prediction', 
-                       'polyphen_score': 'Polyphen Score', 'consequence_terms': 'Molecular Consequence', 
-                       'codons': 'Codon Switch', 'amino_acids': 'Amino Acids', 
+    protein_df.rename(columns={'transcript_id': 'Transcript ID', 'gene_symbol': 'Gene Symbol', 'biotype': 'Biotype', 
+                       'exon': 'Exon Rank', 'Domain': 'Pfam Domain ID', 'domain_name': 'Pfam Domain Name', 
+                       'polyphen_prediction': 'Polyphen Prediction', 'polyphen_score': 'Polyphen Score', 
+                       'consequence_terms': 'Molecular Consequence', 'codons': 'Codon Switch', 'amino_acids': 'Amino Acids', 
                        'refAA': 'refAA', 'varAA': 'varAA'}, inplace=True)
     
     return protein_df
@@ -530,9 +529,20 @@ def get_disease_associations(clinvar_id):
     
     return prt_changes, consequence, diseases
 
-def batch_clinvar(variants):
-    for chrom, start, end, ref, alt in variants:
-        search_clinvar(chrom, start, end, ref, alt)
+def fetch_assign_clinvar(variants):
+    '''
+
+    '''
+    hgvs = prepare_hgvs(variants)
+    results = []
+
+    for x, row in variants.iterrows():
+        chrom, start, stop, ref, alt = row[['chrom', 'start', 'stop', 'ref', 'alt']]
+        diseases = search_clinvar(chrom, start, stop, ref, alt)
+        results.append({'HGVS': hgvs[x],
+                        'diseases': diseases})
+
+    return pd.DataFrame(results)
 
 def search_clinvar(chrom, start, end, ref, alt):
     '''
@@ -550,6 +560,7 @@ def search_clinvar(chrom, start, end, ref, alt):
     '''
     # Craft region string
     region = f'{chrom}:{start}-{end}'
+    diseases = None
 
     try:
         # Filter by region and search for variants
@@ -560,14 +571,13 @@ def search_clinvar(chrom, start, end, ref, alt):
                 disease_info = record.INFO.get('CLNDN')
 
                 diseases = disease_info.split('|') if disease_info else None
+
+                diseases = [d.replace('_', ' ').lower() for d in diseases]
         
     except:
         logging.warning(f'ClinVar search failed for region {region} with ref {ref} and alt {alt}')
-        diseases = None
-
-    results = [chrom, start, end, ref, alt, diseases]
             
-    return results
+    return diseases
 
 def fetch_mus_alleles(MGI_gene_ids):
     '''
@@ -1099,7 +1109,7 @@ def batch_hvar_to_output(variants, assembly='GRCh38'):
     hgvs_list = prepare_hgvs(variants)
 
     # Query VEP
-    vep_df = fetch_vep_data(hgvs_list)
+    vep_df = fetch_vep_data(hgvs_list, species='human')
 
     # Build gene table
     genes = vep_df['gene_symbol'].unique()
@@ -1109,24 +1119,9 @@ def batch_hvar_to_output(variants, assembly='GRCh38'):
     protein_df = prepare_vep_output(vep_df)
 
     # Disease Associations
-    clinvar_ids = batch_clinvar(variants)
-
-    # Build lookup dictionary of protein change and consequence to diseases
-    disease_dict = {}
-    for clinvar in clinvar_ids: # for each ClinVar ID
-        prt_changes, consequence, diseases = get_disease_associations(clinvar) # extract the protein information and diseases
-        for prt_change in prt_changes:
-            disease_dict[f'{prt_change}_{consequence}'] = diseases # map protein changes and consequence to diseases
-
-    # Attach diseases to each transcript row
-    associated_diseases = []
-    for index, prt_row in protein_df.iterrows():
-        key = f'{prt_row['Amino Acids']}_{prt_row['Molecular Consequence']}'
-        d = disease_dict.get(key, None)
-        if d is None: associated_diseases.append(None)
-        else: associated_diseases.append('; '.join(d))
-
-    protein_df['Associated Diseases'] = associated_diseases
+    disease_df = fetch_assign_clinvar(variants)
+    protein_df = protein_df.merge(disease_df, on='HGVS', how='left')
+    protein_df.rename({'diseases': 'Associated Diseases'}, axis=1, inplace=True)
 
     # Print resulting tables
     print(gene_df)
