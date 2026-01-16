@@ -69,6 +69,8 @@ def process_batch_query(input):
 
     Parameters:
         input: string. Multiline string containg all variants to process.
+
+    Returns: DataFrame. Containing chrom, start, stop, ref, alt, for each variant.
     '''
     # Regex pattern to match each line: gene:chromosome:start-end:ref/allele
     pattern = r'^(\w+):(\d+)-(\d+):([ACGTacgt]+)/([ACGTacgt]+)$'
@@ -286,7 +288,8 @@ def fetch_vep_data(variants, species):
         species: string. Species to extract gene from. Defaults to 'human'.
 
     Returns:
-        DataFrame.
+        DataFrame. Containing gene_symbol, transcript_id, polyphen_prediction, polyphen_score, 
+        amino_acids, protein_start, consequence_terms, exon, codons, impact, biotype, Domain, HGVS.
     '''
     # Construct URL extension
     ext = f'/vep/{species}/hgvs?numbers=1&domains=1'
@@ -358,7 +361,14 @@ def fetch_vep_data(variants, species):
 
 def prepare_vep_output(vep_df):
     '''
+    Cleans VEP output for desired protein information and format.
 
+    Inputs:
+        vep_df: DataFrame. Vep output from fetch_vep_data function.
+    
+    Returns:
+        DataFrame. Containing Transcript ID, Gene Symbol, HGVS, Biotype, Exon Rank, Pfam Domain ID, Pfam Domain Name, Polyphen Prediction
+        Polyphen Score, Molecular Consequence, Codon Switch, Amino Acids, refAA, varAA.
     '''
     # Split amino_acids to REFAA and VARAA if in X/Y format
     aa_split = vep_df['amino_acids'].astype(str).str.split('/', expand=True)
@@ -393,8 +403,7 @@ def prepare_vep_output(vep_df):
     protein_df.rename(columns={'transcript_id': 'Transcript ID', 'gene_symbol': 'Gene Symbol', 'biotype': 'Biotype', 
                        'exon': 'Exon Rank', 'Domain': 'Pfam Domain ID', 'domain_name': 'Pfam Domain Name', 
                        'polyphen_prediction': 'Polyphen Prediction', 'polyphen_score': 'Polyphen Score', 
-                       'consequence_terms': 'Molecular Consequence', 'codons': 'Codon Switch', 'amino_acids': 'Amino Acids', 
-                       'refAA': 'refAA', 'varAA': 'varAA'}, inplace=True)
+                       'consequence_terms': 'Molecular Consequence', 'codons': 'Codon Switch', 'amino_acids': 'Amino Acids'}, inplace=True)
     
     return protein_df
 
@@ -531,7 +540,13 @@ def get_disease_associations(clinvar_id):
 
 def fetch_assign_clinvar(variants):
     '''
+    Fetches ClinVar disease associations and assigns them to a list of variants.
 
+    Inputs:
+        Variants: DataFrame. Containing chrom, start, stop, ref, alt.
+
+    Returns:
+        DataFrame. Containing HGVS, diseases for each variant.
     '''
     hgvs = prepare_hgvs(variants)
     results = []
@@ -587,7 +602,7 @@ def fetch_mus_alleles(MGI_gene_ids):
         MGI_gene_ids: list of str. A list of all MGI_gene_ids to retur strings for.
     
     Returns:
-        DataFrame. 
+        DataFrame. Containing Gene, AlleleID, AlleleSymbol, Chromosome, Start, End, Ref, Alt, Molecular Consequence.
     '''
     # Only retain variants with logged genomic information
     mouse_select = mus_alleles_df[(mus_alleles_df['AlleleAssociatedGeneId'].isin(MGI_gene_ids)) &
@@ -618,15 +633,13 @@ def fetch_mus_disease_map(MGI_allele_ids):
         MGI_gene_ids: list of str. A list of all MGI_gene_ids to return strings for.
     
     Returns:
-        DataFrame. 
+        dictionary. Mapping of AlleleID to set of DO terms.
     '''
 
     filtered_disease_df = MGI_disease_df[MGI_disease_df['AlleleID'].isin(MGI_allele_ids)]
 
     mgi_disease_dict  = (filtered_disease_df.groupby('AlleleID')['DOterm'].apply(set).to_dict())
-    
-    print(mgi_disease_dict)
-    
+        
     return mgi_disease_dict
 
 def mouse_disease_associations(gene):
@@ -637,14 +650,7 @@ def mouse_disease_associations(gene):
         gene: string. Gene symbol to extract info for.
     
     Returns:
-        pandas.DataFrame. Containins allele and ontology annotation records associated with gene. 
-            - Gene.alleles.symbol
-            - Gene.alleles.name
-            - Gene.alleles.primaryIdentifier
-            - Gene.ontologyAnnotations.ontologyTerm.name
-            - Gene.ontologyAnnotations.ontologyTerm.identifier
-            - Gene.ontologyAnnotations.subject.symbol
-            - Gene.ontologyAnnotations.qualifier
+        DataFrame. Containins symbol, name, primaryIdentifier, ontologyName, ontologyID.
     '''
 
     # log Request to MouseMine
@@ -701,7 +707,7 @@ def get_doid_name(disease):
         disease: string. Disease name to convert.
 
     Returns:
-        dictionary. Containing label and ID of disease. Returns None if no match found.
+        dictionary. Mapping label to ID of disease. Returns None if no match found.
     '''
     # Construct URL
     url = ols_base_url + f'search?q={disease}&ontology=doid&exact=true'
@@ -1089,7 +1095,7 @@ def score_output(human_gene_df, human_prt_df, mouse_gene_df, mouse_prt_df):
 # ---- Batch Main Functions ----
 def batch_hvar_to_output(variants, assembly='GRCh38'):
     '''
-    Annotate a human variant using local gene metadata, Ensembl VEP, and ClinVar.
+    Annotate a batch of human variant using local gene metadata, Ensembl VEP, and ClinVar.
 
     Parameters
 
@@ -1131,17 +1137,3 @@ def batch_hvar_to_output(variants, assembly='GRCh38'):
     
     return gene_df, protein_df
 
-
-if __name__ == '__main__':
-
-    start = 157774114
-    end = 157774114
-    chrom = '2'
-    ref = 'C'
-    alt = 'T'
-
-    results1, r2 = mvar_to_output('ACVR1', assembly='GRCm39')
-
-    print(results1)
-
-    print(r2)

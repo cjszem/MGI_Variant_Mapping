@@ -29,7 +29,7 @@ def parse_doid_obo(doid_path):
 
 def parse_ensembl_gff3(gff3_path, species):
     '''
-    Parses Ensembl GFF3 file to extract gene information and saves it as a tsv file.
+    Parses Ensembl GFF3 file to extract gene information and saves it as a parquet file.
     '''
     cols = ['seqid','source','type','start','end','score','strand','phase','attributes']
     gene_df = pd.read_csv(gff3_path, sep='\t', comment='#', compression='gzip', header=None, names=cols, low_memory=False)
