@@ -70,7 +70,7 @@ def process_batch_query(input):
     Parameters:
         input: string. Multiline string containg all variants to process.
 
-    Returns: DataFrame. Containing chrom, start, stop, ref, alt, for each variant.
+    Returns: DataFrame. Containing Chromosome, Start, Ref, Alt, for each variant.
     '''
     # Regex pattern to match each line: gene:chromosome:start-end:ref/allele
     pattern = r'^(\w+):(\d+)-(\d+):([ACGTacgt]+)/([ACGTacgt]+)$'
@@ -84,11 +84,11 @@ def process_batch_query(input):
         # Extract inputted variant fields
         match = re.match(pattern, line)
         if match:
-            variants.append({'chrom': match.group(1),
-                             'start': int(match.group(2)),
-                             'stop': int(match.group(3)),
-                             'ref': match.group(4),
-                             'alt': match.group(5)})
+            variants.append({'Chromosome': match.group(1),
+                             'Start': int(match.group(2)),
+                             'Stop': int(match.group(3)),
+                             'Ref': match.group(4),
+                             'Alt': match.group(5)})
         
     # Create pandas dataframe
     variants = pd.DataFrame(variants)
@@ -267,24 +267,21 @@ def prepare_hgvs(variants):
     Converts a DataFrame of variants into a list of HGHVS notations for VEP querying
     
     Parameters:
-        variants: DataFrame. containing chrom, start, ref, alt.
+        variants: DataFrame. containing Chromosome, Start, Ref, Alt.
 
     Returns:
         list of strings. HGVS notations (chrom:g.startRef>Alt).
     '''
-    hgvs_list = (variants['chrom'].astype(str) + ':g.' + variants['start'].astype(str) + variants['ref'] + '>' + variants['alt']).tolist()
+    variants['HGVS'] = (variants['Chromosome'].astype(str) + ':g.' + variants['Start'].astype(str) + variants['Ref'] + '>' + variants['Alt'])
 
-    return hgvs_list
+    return variants
 
 def fetch_vep_data(variants, species):
     '''
     Use Ensembl VEP REST endpoint to get consequence data.
 
     Parameters:
-        chrom: str. Chromosome of variant.
-        start: int. Genomic location of variant start.
-        end: int. Genomic location of variant end.
-        alt: string. Alternate allele
+        variants: list of strings. List of variant HGVS notations to search.
         species: string. Species to extract gene from. Defaults to 'human'.
 
     Returns:
@@ -359,7 +356,7 @@ def fetch_vep_data(variants, species):
         logging.error('VEP request failed:', e)
         return pd.DataFrame()
 
-def prepare_vep_output(vep_df):
+def prepare_vep_output(vep_df, species):
     '''
     Cleans VEP output for desired protein information and format.
 
@@ -384,26 +381,29 @@ def prepare_vep_output(vep_df):
     # Merge consequence terms into a single string
     vep_df['consequence_terms'] = vep_df['consequence_terms'].apply(lambda x: ','.join(x) if isinstance(x, list) else x)
 
-
-    # Fetch domain names
-    for domain in vep_df['Domain'].unique():
-        if domain == None:
-            dom_name = None
-        else:
-            dom_name = get_domain_name(domain)
-        vep_df.loc[vep_df['Domain'] == domain, 'domain_name'] = dom_name
+    # Extract domain information if human - mouse domains extracted after disease filtering
+    if species == 'human':
+        # Fetch domain names
+        for domain in vep_df['Domain'].unique():
+            if domain == None:
+                dom_name = None
+            else:
+                dom_name = get_domain_name(domain)
+            vep_df.loc[vep_df['Domain'] == domain, 'domain_name'] = dom_name
 
     
     # Create protein DataFrame
     keep = ['gene_symbol', 'transcript_id', 'HGVS', 'biotype', 'exon', 'Domain', 'domain_name', 'polyphen_prediction', 
             'polyphen_score', 'consequence_terms', 'codons', 'amino_acids', 'refAA', 'varAA']
-    protein_df = vep_df[keep]
+    cols_present = [col for col in keep if col in vep_df.columns]
+    protein_df = vep_df[cols_present].copy()
 
     # Update column names
     protein_df.rename(columns={'transcript_id': 'Transcript ID', 'gene_symbol': 'Gene Symbol', 'biotype': 'Biotype', 
                        'exon': 'Exon Rank', 'Domain': 'Pfam Domain ID', 'domain_name': 'Pfam Domain Name', 
                        'polyphen_prediction': 'Polyphen Prediction', 'polyphen_score': 'Polyphen Score', 
-                       'consequence_terms': 'Molecular Consequence', 'codons': 'Codon Switch', 'amino_acids': 'Amino Acids'}, inplace=True)
+                       'consequence_terms': 'Molecular Consequence', 'codons': 'Codon Switch', 'amino_acids': 'Amino Acids'}, 
+                       inplace=True,  errors='ignore')
     
     return protein_df
 
@@ -548,11 +548,11 @@ def fetch_assign_clinvar(variants):
     Returns:
         DataFrame. Containing HGVS, diseases for each variant.
     '''
-    hgvs = prepare_hgvs(variants)
+    hgvs = variants['HGVS'].tolist()
     results = []
 
     for x, row in variants.iterrows():
-        chrom, start, stop, ref, alt = row[['chrom', 'start', 'stop', 'ref', 'alt']]
+        chrom, start, stop, ref, alt = row[['Chromosome', 'Start', 'Stop', 'Ref', 'Alt']]
         diseases = search_clinvar(chrom, start, stop, ref, alt)
         results.append({'HGVS': hgvs[x],
                         'diseases': diseases})
@@ -953,58 +953,50 @@ def mvar_to_output(gene, assembly='GRCm39'):
     mouse_allele_df = fetch_mus_alleles(MGI_gene_ids)
 
 
+    # Perpare HGVS for VEP
+    mouse_allele_df = prepare_hgvs(mouse_allele_df)
+    allele_map = mouse_allele_df[['HGVS', 'AlleleID', 'AlleleSymbol']]
+
     # Query VEP for each variant
-    mouse_vep_df = pd.DataFrame()
-    for i, row in mouse_allele_df.iterrows():
-        variant_vep = get_vep_data(row['Chromosome'], row['Start'], row['End'], row['Alt'], species='mouse')
-        variant_vep['AlleleID'] = row['AlleleID']
-        variant_vep['AlleleSymbol'] = row['AlleleSymbol']
-        mouse_vep_df = pd.concat([mouse_vep_df, variant_vep], ignore_index=True)
-    
-    # Keep only protein coding transcript consequences
-    mouse_prt_df = mouse_vep_df[mouse_vep_df['biotype'] == 'protein_coding'].copy()
+    variant_vep = fetch_vep_data(mouse_allele_df['HGVS'].tolist(), 'mouse')
 
-    # Split amino_acids to REFAA and VARAA if in X/Y format
-    aa_split = mouse_prt_df['amino_acids'].astype(str).str.split('/', expand=True)
-    mouse_prt_df['refAA'] = aa_split[0]
-    mouse_prt_df['varAA'] = aa_split[1]
+    print(variant_vep.columns)
 
-    # Add protein location of amino_acids
-    mouse_prt_df['protein_start'] = mouse_prt_df['protein_start'].astype(pd.Int64Dtype())
-    mouse_prt_df['amino_acids'] = mouse_prt_df.apply(lambda row: f"{row['refAA']}{row['protein_start']}{row['varAA']}", axis=1)
+    # Clean VEP output
+    mouse_prt_df = prepare_vep_output(variant_vep, 'mouse')
 
-    # Fix consequence formating - originally returned as a list
-    mouse_prt_df['consequence_terms'] = mouse_prt_df['consequence_terms'].apply(lambda x: ','.join(x) if isinstance(x, list) else x)
+    # Map Alleles back to VEP output
+    mouse_prt_df = mouse_prt_df.merge(allele_map, on='HGVS', how='left')
 
 
-    # Query MouseMine for ontology associations
+    # Query MGD for ontology associations
     mouse_disease_map = fetch_mus_disease_map(mouse_prt_df['AlleleID'].unique())
 
     # Drop alleles without disease associations
-    mouse_prt_df = mouse_prt_df[mouse_prt_df['AlleleID'].isin(mouse_disease_map.keys())]\
+    mouse_prt_df = mouse_prt_df[mouse_prt_df['AlleleID'].isin(mouse_disease_map.keys())]
     
     # Map diseases to mouse alleles
     mouse_prt_df['Disease Association'] = mouse_prt_df['AlleleID'].map(mouse_disease_map)
     mouse_prt_df['Disease Association'] = mouse_prt_df['Disease Association'].apply(lambda x: ','.join(x) if isinstance(x, set) else x)
 
+    print(mouse_prt_df.columns)
+
+    # Initialize domain name column
+    mouse_prt_df['Pfam Domain Name'] = None
 
     # Fetch domain names
-    for domain in mouse_prt_df['Domain'].unique():
-        if domain == None:
+    for domain in mouse_prt_df['Pfam Domain ID'].unique():
+        if pd.isna(domain):
             dom_name = None
         else:
             dom_name = get_domain_name(domain)
-        mouse_prt_df.loc[mouse_prt_df['Domain'] == domain, 'Pfam Domain Name'] = dom_name
+        mouse_prt_df.loc[mouse_prt_df['Pfam Domain ID'] == domain, 'Pfam Domain Name'] = dom_name
 
 
-    # Rearrange and rename columns
-    mouse_prt_df = mouse_prt_df[['AlleleID', 'AlleleSymbol', 'transcript_id', 'biotype', 
-                                 'exon', 'Domain', 'Pfam Domain Name', 'consequence_terms', 
-                                 'codons', 'amino_acids', 'refAA', 'varAA', 'Disease Association']]
-    
-    mouse_prt_df.rename(columns={'transcript_id': 'Transcript ID', 'biotype': 'Biotype', 'exon': 'Exon Rank', 
-                                 'Domain': 'Pfam Domain ID', 'consequence_terms': 'Molecular Consequence', 
-                                 'codons': 'Codon Switch', 'amino_acids': 'Amino Acids'}, inplace=True)
+    # Rearrange columns
+    mouse_prt_df = mouse_prt_df[['AlleleID', 'AlleleSymbol', 'Transcript ID', 'Biotype', 
+                                 'Exon Rank', 'Pfam Domain ID', 'Pfam Domain Name', 'Molecular Consequence', 
+                                 'Codon Switch', 'Amino Acids', 'refAA', 'varAA', 'Disease Association']]
     
 
     # Save debugging tables to CSVs
@@ -1112,17 +1104,17 @@ def batch_hvar_to_output(variants, assembly='GRCh38'):
     log_batch_query(variants)
     
     # Prepare HGVS notation
-    hgvs_list = prepare_hgvs(variants)
+    variants = prepare_hgvs(variants)
 
     # Query VEP
-    vep_df = fetch_vep_data(hgvs_list, species='human')
+    vep_df = fetch_vep_data(variants['HGVS'].tolist(), 'human')
 
     # Build gene table
     genes = vep_df['gene_symbol'].unique()
     gene_df = fetch_gene_info(genes, species='human')
 
     # Clean VEP output into protein DataFrame
-    protein_df = prepare_vep_output(vep_df)
+    protein_df = prepare_vep_output(vep_df, 'human')
 
     # Disease Associations
     disease_df = fetch_assign_clinvar(variants)

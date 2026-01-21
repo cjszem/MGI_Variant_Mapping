@@ -5,3 +5,6 @@ data/NCBI/*
 data/Ensembl/Homo_sapiens.GRCh38.115.gff3.gz
 data/Ensembl/Mus_musculus.GRCm39.115.gff3.gz
 data/Ensembl/mouse_gene_data.tsv
+
+results/
+testing_results/

@@ -5,6 +5,8 @@
 
     Description: MGI transcribed allele entries with genomic positions.
 
+    Source: https://fms.alliancegenome.org/download/VARIANT-ALLELE_NCBITaxon10090.tsv.gz
+
     Usage: Provides allele-level genomic coordinates for mapping variants to mouse alleles.
 
 2. data/MGI/HOM_ProteinCoding.rpt
@@ -16,7 +18,6 @@
     MGI_ID    MusGeneSymbol    MusEntrezGeneID    MusHGNC_ID    HumGeneSymbol    HumEntrezGeneID
     ```
     
-
     Source: https://www.informatics.jax.org/downloads/reports/HOM_ProteinCoding.rpt
 
     Usage: Links mouse and human genes for cross-species mapping.
