@@ -51,6 +51,11 @@
 
     Usage: Enables synonym resolution for disease terms.
 
+3. data/DOID/mondo.obo
+
+    Source: https://purl.obolibrary.org/obo/mondo.obo
+    
+
 
 ## Ensembl Gene Data
 

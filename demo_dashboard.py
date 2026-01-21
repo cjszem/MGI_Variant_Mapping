@@ -1,7 +1,7 @@
 import streamlit as st
 import streamlit.components.v1 as components
 import base64
-from util import hvar_to_output, mvar_to_output, score_output, process_batch_query, batch_hvar_to_output
+from main_util import hvar_to_output, mvar_to_output, score_output, process_batch_query, batch_hvar_to_output
 
 
 # ---- CONFIGURATION ----
