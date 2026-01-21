@@ -1,5 +1,5 @@
 .DS_Store
-*.pyc
+__pycache__/
 
 data/NCBI/*
 data/Ensembl/Homo_sapiens.GRCh38.115.gff3.gz
@@ -8,3 +8,4 @@ data/Ensembl/mouse_gene_data.tsv
 
 results/
 testing_results/
+testing/
