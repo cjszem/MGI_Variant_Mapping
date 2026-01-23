@@ -4,20 +4,22 @@ import logging
 import requests
 import pandas as pd
 
-
 # Load Config
 with open('config.yaml') as f:
     config = yaml.safe_load(f)
 
-
 # Load Ensembl URL
 ensembl_base_url = config['api']['ensembl_base_url']
-
 
 # Load Gene Parquets
 mouse_gene_pqt = pd.read_parquet(config['paths']['mouse_gene_pqt'])
 human_gene_pqt = pd.read_parquet(config['paths']['human_gene_pqt'])
 
+# Load homology
+homology_df = pd.read_csv(config['paths']['mgi_homology'],
+                          sep='\t', names=['MGI_ID', 'MusGeneSymbol', 'MusEntrezGeneID', 
+                                           'MusHGNC_ID', 'HumGeneSymbol', 'HumEntrezGeneID'])
+homology_dict = dict(zip(homology_df['HumGeneSymbol'], homology_df['MusGeneSymbol']))
 
 # Load Mus alleles
 mus_alleles_df = pd.read_csv(config['paths']['mgi_alleles'], sep='\t')
@@ -93,18 +95,31 @@ def fetch_gene_info(genes, species='human'):
     subset = pqt[pqt['Name'].isin(genes)]
 
     # Preserve order of input genes
-    subset = subset.set_index('Name').reindex(genes).reset_index()
+    subset = subset.set_index('Name').reindex(list(genes)).reset_index()
 
     # Extract description and accession
     subset[['Description', 'Accession']] = subset['description'].str.extract(r'^(.*?) \[Source:.+ Symbol.+Acc:(.+)\]$')
 
     # Clean DataFrame
     subset.drop('description', axis=1, inplace=True)
-    subset.rename(columns={'Name': 'Gene', 'biotype': 'Biotype', 'seqid': 'Chromosome', 'start': 'Start', 
+    
+    subset.rename(columns={'Name': 'Gene Symbol', 'biotype': 'Biotype', 'seqid': 'Chromosome', 'start': 'Start', 
                            'end': 'End', 'strand': 'Strand', 'gene_id': 'Ensembl_ID'}, inplace=True)
-    subset = subset[['Gene', 'Description', 'Biotype', 'Chromosome', 'Start', 'End', 'Strand', 'Ensembl_ID', 'Accession']]
+    
+    subset = subset[['Gene Symbol', 'Description', 'Biotype', 'Chromosome', 'Start', 'End', 'Strand', 'Ensembl_ID', 'Accession']]
 
     return subset
+
+
+def fetch_homologous_gene(input_mapping_df):
+    '''
+    '''
+    input_mapping_df = homology_df.merge(input_mapping_df, left_on='HumGeneSymbol', right_on='Hum Gene', how='inner')\
+                                  .rename(columns={'MusGeneSymbol': 'Mus Gene'}).copy()
+    
+
+    return input_mapping_df
+
 
 
 def fetch_mus_alleles(MGI_gene_ids):
@@ -125,7 +140,7 @@ def fetch_mus_alleles(MGI_gene_ids):
     mouse_allele_df = pd.DataFrame()
     old_cols = ['AlleleAssociatedGeneSymbol', 'AlleleId', 'AlleleSymbol', 'Chromosome', 'StartPosition', 
                 'EndPosition', 'SequenceOfReference', 'SequenceOfVariant'] # Column names in mouse_select
-    new_cols = ['Gene', 'AlleleID', 'AlleleSymbol', 'Chromosome', 'Start', 'End', 'Ref', 'Alt'] # Corresponding column names for mouse_allele_df
+    new_cols = ['Gene Symbol', 'AlleleID', 'AlleleSymbol', 'Chromosome', 'Start', 'End', 'Ref', 'Alt'] # Corresponding column names for mouse_allele_df
     mouse_allele_df[new_cols] = mouse_select[old_cols] # Update column names
 
 

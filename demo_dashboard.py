@@ -1,7 +1,8 @@
 import streamlit as st
 import streamlit.components.v1 as components
 import base64
-from main_util import hvar_to_output, mvar_to_output, score_output, process_batch_query, batch_hvar_to_output
+from main_util import hvar_to_output, mvar_to_output, score_output, batch_hvar, batch_mvar
+from processing_util import process_batch_query
 
 
 # ---- CONFIGURATION ----
@@ -98,7 +99,10 @@ with batch_tab:
 
     if submit_batch:
         variants = process_batch_query(batch_input)
-        hum_gene_df, hum_prt_df = batch_hvar_to_output(variants)
+        hum_gene_df, hum_prt_df, input_gene_df = batch_hvar(variants)
+        mouse_gene_df, mouse_prt_df, gene_input_df = batch_mvar(input_gene_df)
 
         st.dataframe(hum_gene_df, hide_index=True)
         st.dataframe(hum_prt_df, hide_index=True)
+        st.dataframe(mouse_gene_df, hide_index=True)
+        st.dataframe(mouse_prt_df, hide_index=True)

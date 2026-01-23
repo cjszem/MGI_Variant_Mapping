@@ -1,13 +1,14 @@
 import yaml
 import logging
 import requests
+import numpy as np
 import pandas as pd
-
+import subprocess
+import json
 
 # Load Config
 with open('config.yaml') as f:
     config = yaml.safe_load(f)
-
 
 # Load APIs
 ensembl_base_url = config['api']['ensembl_base_url']
@@ -135,6 +136,16 @@ def get_vep_data(chromosome, start, end, alt, species='human'):
         return pd.DataFrame()
 
 
+def extract_pfam_name(domain_list):
+    """Extract first Pfam domain name from a VEP domains list."""
+    if not isinstance(domain_list, list):
+        return None
+    for d in domain_list:
+        if isinstance(d, dict) and d.get('db') == 'Pfam':
+            return d.get('name')
+    return None
+
+
 def fetch_vep_data(variants, species):
     '''
     Use Ensembl VEP REST endpoint to get consequence data.
@@ -155,7 +166,9 @@ def fetch_vep_data(variants, species):
         ext += '&pick_order=mane_select,length&pick=1'
 
     headers={'Content-Type': 'application/json', 'Accept': 'application/json'}
-    hgvs_dict = {'hgvs_notations': variants}
+    hgvs_dict = {'hgvs_notations': list(set(variants))}
+
+    logging.info(f'Ensembl VEP Request: {ensembl_base_url + ext}, for {hgvs_dict}')
 
     try:
         # Make POST request
@@ -183,20 +196,12 @@ def fetch_vep_data(variants, species):
             df = df[[col for col in keep if col in df.columns]]
 
             # Extract Pfam domain names
-            pfam = None
-            if 'domains' in df.columns and len(df['domains']) > 0:
-                for domain in df['domains'][0]:
-                    if isinstance(domain, dict) and domain.get('db') == 'Pfam':
-                        pfam = domain.get('name')
-                        break
-
-                if pfam is None: logging.warning('VEP domain failure: no pfam database in response')
-
-            else: logging.warning('VEP domain failure: no "domains" information in response')
-            
-            # Add Pfam domain and drop domain dictionary
-            df['Domain'] = pfam
-            df.drop('domains', axis=1, inplace=True)
+            if 'domains' in df.columns:
+                df['Domain'] = df['domains'].apply(extract_pfam_name)
+                df.drop('domains', axis=1, inplace=True)
+            else:
+                logging.warning('VEP domain failure: no "domains" information in response')
+                df['Domain'] = None
 
             # Add variant identifier for traceability
             df['HGVS'] = variant.get('input')
@@ -205,6 +210,8 @@ def fetch_vep_data(variants, species):
 
         # Combine all variant DataFrames
         vep_data = pd.concat(all_dfs, ignore_index=True) if all_dfs else pd.DataFrame()
+
+        vep_data = vep_data.replace({np.nan: None})
 
         vep_data.to_csv('./testing_results/vep_output.csv', index=False)
 
@@ -241,19 +248,18 @@ def prepare_vep_output(vep_df, species):
     # Merge consequence terms into a single string
     vep_df['consequence_terms'] = vep_df['consequence_terms'].apply(lambda x: ','.join(x) if isinstance(x, list) else x)
 
-    # Extract domain information if human - mouse domains extracted after disease filtering
-    if species == 'human':
-        # Fetch domain names
-        for domain in vep_df['Domain'].unique():
-            if domain == None:
-                dom_name = None
-            else:
-                dom_name = get_domain_name(domain)
-            vep_df.loc[vep_df['Domain'] == domain, 'domain_name'] = dom_name
+
+    # Fetch domain names
+    for domain in vep_df['Domain'].unique():
+        if domain == None:
+            dom_name = None
+        else:
+            dom_name = get_domain_name(domain)
+        vep_df.loc[vep_df['Domain'] == domain, 'domain_name'] = dom_name
 
     
     # Create protein DataFrame
-    keep = ['gene_symbol', 'transcript_id', 'HGVS', 'biotype', 'exon', 'Domain', 'domain_name', 'polyphen_prediction', 
+    keep = ['Input', 'Submission', 'gene_symbol', 'transcript_id', 'HGVS', 'biotype', 'exon', 'Domain', 'domain_name', 'polyphen_prediction', 
             'polyphen_score', 'consequence_terms', 'codons', 'amino_acids', 'refAA', 'varAA']
     cols_present = [col for col in keep if col in vep_df.columns]
     protein_df = vep_df[cols_present].copy()
@@ -266,3 +272,131 @@ def prepare_vep_output(vep_df, species):
                        inplace=True,  errors='ignore')
     
     return protein_df
+
+
+def docker_input(variants):
+    '''
+    Creates a VCFv4.0 of unique variants in given DataFrame.
+
+    Parameters:
+        variants: DataFrame. Contains Chromosome, Start, Ref, Alt
+    
+    Creates file processing/vep/input.vcf
+    '''
+    unique_variants = variants.drop_duplicates(subset='Submission')
+
+    with open('processing/vep/input.vcf', 'w') as f:
+        # VCF meta-information
+        f.write('##fileformat=VCFv4.0\n')
+
+        # Header line
+        f.write('#CHROM\tPOS\tID\tREF\tALT\n')
+
+        # Write variants
+        for _, row in unique_variants.iterrows():
+            f.write(f'{row['Chromosome']}\t'
+                    f'{row['Start']}\t'
+                    f'.\t'
+                    f'{row['Ref']}\t'
+                    f'{row['Alt']}\n')
+
+def docker_vep(species, input_file='input.vcf', output_file='output.json'):
+    '''
+    Runs local VEP on input file for species.
+
+    Parameters:
+        species: str. Either 'homo_sapiens' or 'mus_musculus'.
+        input_file: str. Input file in processing dictionary. Defaults to 'input.vcf'
+        output_file: str. Output file in processing dictionary. Defaults to 'output.json'
+    '''
+    cmd = ['docker', 'run', '--rm',
+           '-v', '/Users/szemac/Desktop/MGI_Variant_Mapping/processing/vep:/processing',
+           '-v', '/Users/szemac/.vep:/opt/vep/.vep',
+           'ensemblorg/ensembl-vep',
+           'vep',
+           '--input_file', f'/processing/{input_file}',
+           '--output_file', f'/processing/{output_file}',
+           '--json',
+           '--cache',
+           '--offline',
+           '--force_overwrite',
+           '--species', species,
+           '--domains',
+           '--biotype',
+           '--symbol',
+           '--numbers']
+    
+    if species == 'homo_sapiens':
+        cmd += ['--polyphen', 'b',
+                '--pick',
+                '--pick_order', 'mane_select,length']
+
+    subprocess.run(cmd, check=True)
+
+def parse_vep_json(input_file='processing/vep/output.json'):
+    '''
+    Parse VEP json output (Docker output) into a DataFrame.
+
+    Parameters:
+        inpute_file. str. path to json for parsing.
+    
+    Returns:
+        DataFrame. VEP Output.
+    '''
+
+    all_dfs = []
+
+    with open(input_file) as f:
+        for line in f:  # NDJSON: one variant per line
+            if not line.strip():
+                continue
+
+            variant = json.loads(line)
+
+            consequences = variant.get('transcript_consequences', [])
+            if not consequences:
+                logging.warning(f"No transcript consequences for {variant.get('input')}")
+                continue
+
+            # Flatten transcript consequences
+            df = pd.json_normalize(consequences)
+
+            # Keep only columns you care about
+            keep = [
+                'gene_symbol', 'transcript_id',
+                'polyphen_prediction', 'polyphen_score',
+                'amino_acids', 'protein_start',
+                'consequence_terms', 'exon',
+                'domains', 'codons',
+                'impact', 'biotype',
+                'hgvsp', 'hgvsc'
+            ]
+            df = df[[c for c in keep if c in df.columns]]
+
+            # Extract Pfam domain
+            if 'domains' in df.columns:
+                df['Domain'] = df['domains'].apply(extract_pfam_name)
+                df.drop(columns=['domains'], inplace=True)
+            else:
+                df['Domain'] = None
+
+            # Attach submitted input (optional)
+            df['Submission'] = variant.get('input')
+
+            all_dfs.append(df)
+
+    vep_df = pd.concat(all_dfs, ignore_index=True) if all_dfs else pd.DataFrame()
+    vep_df = vep_df.replace({np.nan: None})
+
+    return vep_df
+
+def run_vep(variants, species):
+
+    docker_input(variants)
+
+    docker_vep(species)
+    
+    vep_df = parse_vep_json()
+
+    return vep_df
+

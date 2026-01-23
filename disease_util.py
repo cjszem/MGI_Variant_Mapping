@@ -1,7 +1,6 @@
 import yaml
 import json
 import logging
-import requests
 import pandas as pd
 from Bio import Entrez
 from cyvcf2 import VCF
@@ -23,8 +22,8 @@ MGI_disease_df = pd.read_csv(config['paths']['mgi_disease'],
                                     'AlleleRRID', 'MarkerSymbol', 'MarkerMGIid', 'GeneRepositoryID', ''])
 
 
-mousemine_base_url = config['api']['mousemine_base_url']
-ols_base_url = config['api']['ols_base_url']
+mondo_xref_map = json.load(open('data/MONDO/mondo_xref_map.json'))
+mondo_term_map = json.load(open('data/MONDO/mondo_term_map.json'))
 
 
 disease_mapping = json.load(open(config['paths']['doid_map']))
@@ -128,27 +127,28 @@ def get_disease_associations(clinvar_id):
     return prt_changes, consequence, diseases
 
 
-def fetch_assign_clinvar(variants):
-    '''
-    Fetches ClinVar disease associations and assigns them to a list of variants.
-
-    Inputs:
-        Variants: DataFrame. Containing chrom, start, stop, ref, alt.
-
-    Returns:
-        DataFrame. Containing HGVS, diseases for each variant.
-    '''
-    hgvs = variants['HGVS'].tolist()
+def assign_clinvar(variants):
+    """
+    Fetch ClinVar disease associations for a list of variants.
+    """
     results = []
 
-    for x, row in variants.iterrows():
-        chrom, start, stop, ref, alt = row[['Chromosome', 'Start', 'Stop', 'Ref', 'Alt']]
-        diseases = search_clinvar(chrom, start, stop, ref, alt)
-        results.append({'HGVS': hgvs[x],
-                        'diseases': diseases})
+    # Precompute HGVS list
+    hgvs_list = variants['Input'].tolist()
+
+    # Cache to avoid redundant queries
+    cache = {}
+
+    for idx, row in variants.iterrows():
+        chrom, start, stop, ref, alt = row.Chromosome, row.Start, row.Stop, row.Ref, row.Alt
+        key = (chrom, start, stop, ref, alt)
+
+        if key not in cache:
+            cache[key] = search_clinvar(chrom, start, stop, ref, alt)
+
+        results.append({'Input': hgvs_list[idx], 'CLNDISDB': cache[key]})
 
     return pd.DataFrame(results)
-
 
 def search_clinvar(chrom, start, end, ref, alt):
     '''
@@ -174,19 +174,19 @@ def search_clinvar(chrom, start, end, ref, alt):
             if record.REF == ref and alt in record.ALT:
 
                 # Extract disease names
-                disease_info = record.INFO.get('CLNDN')
+                disease_info = record.INFO.get('CLNDISDB')
 
-                diseases = disease_info.split('|') if disease_info else None
+                if disease_info: 
+                    diseases = [d.split(',') for d in disease_info.split('|')]
 
-                diseases = [d.replace('_', ' ').lower() for d in diseases]
-        
-    except:
-        logging.warning(f'ClinVar search failed for region {region} with ref {ref} and alt {alt}')
+
+    except Exception as e:
+        logging.warning(f'ClinVar search failed for {region}: {e}')
             
     return diseases
 
 
-def fetch_mus_disease_map(MGI_allele_ids):
+def fetch_mus_doid(allele_ids):
     '''
     Fetches all Mouse disease associations with human models for all alleles from list of MGI_gene_ids.
     
@@ -194,125 +194,105 @@ def fetch_mus_disease_map(MGI_allele_ids):
         MGI_gene_ids: list of str. A list of all MGI_gene_ids to return strings for.
     
     Returns:
-        dictionary. Mapping of AlleleID to set of DO terms.
+        dictionary. Mapping of AlleleID to set of DOIDs.
     '''
 
-    filtered_disease_df = MGI_disease_df[MGI_disease_df['AlleleID'].isin(MGI_allele_ids)]
+    filtered_disease_df = MGI_disease_df[MGI_disease_df['AlleleID'].isin(allele_ids)]
 
-    mgi_disease_dict  = (filtered_disease_df.groupby('AlleleID')['DOterm'].apply(set).to_dict())
+    doid_allele_dict  = (filtered_disease_df.groupby('AlleleID')['DOID'].apply(set).to_dict())
         
-    return mgi_disease_dict
+    return doid_allele_dict
+
+def map_doids_to_mondo(doid_map):
+    """
+    Convert {AlleleID: {DOID}} to a long table, merge MONDO info,
+    then collapse back into per-allele lists.
+    """
+    # Normalize to long df
+    rows = [{'AlleleID': allele, 'DOID': doid}
+            for allele, doids in doid_map.items()
+            for doid in doids]
+    
+    df = pd.DataFrame(rows)
+
+    # Map MONDO ID and MONDO term
+    df['MONDO'] = df['DOID'].map(mondo_xref_map)
+    df['Disease Association'] = df['MONDO'].map(mondo_term_map)
+
+    # Collapse back to allele level
+    mondo_by_allele = df.groupby('AlleleID')['MONDO'].apply(lambda s: sorted(set(s.dropna())))
+    term_by_allele  = df.groupby('AlleleID')['Disease Association'].apply(lambda s: sorted(set(s.dropna())))
+
+    return mondo_by_allele.to_dict(), term_by_allele.to_dict()
 
 
-def mouse_disease_associations(gene):
+def clndisdb_to_mondo(clinvar_results):
     '''
-    Query MouseMine for allele and ontology associations for a given mouse gene symbol.
+    Extracts MONDO IDs and terms from ClinVar CLNDISDB entries.
 
     Parameters:
-        gene: string. Gene symbol to extract info for.
+        clinvar_results: DataFrame. containing 'CLNDISDB' column with disease entries.
     
     Returns:
-        DataFrame. Containins symbol, name, primaryIdentifier, ontologyName, ontologyID.
+        DataFrame. with added 'MONDO' and 'Associated Diseases' columns.
     '''
 
-    # log Request to MouseMine
-    logging.info(f'MouseMine Request: [Gene Symbol]={gene}')
-    
-    # Construct query XML
-    query_xml = f'''
-    <query name="HMM Search" model="genomic" 
-        view="Gene.alleles.symbol 
-            Gene.alleles.name 
-            Gene.alleles.primaryIdentifier 
-            Gene.alleles.ontologyAnnotations.ontologyTerm.name 
-            Gene.alleles.ontologyAnnotations.ontologyTerm.identifier" 
-        longDescription="" 
-        sortOrder="Gene.alleles.symbol asc" 
-        constraintLogic="A">
-        <constraint path="Gene.symbol" code="A" op="=" value="{gene}"/>
-    </query>
-    '''
+    mondos_col = []
+    terms_col = []
 
-    try:
-        # Make request to MouseMine
-        response = requests.get(
-            mousemine_base_url,
-            params={'format': 'json',
-                    'query': query_xml})
-        data = response.json()
+    # Iterate rows
+    for _, disease_list in enumerate(clinvar_results['CLNDISDB'].values):
 
-        # Create results DataFrame
-        ontology_df = pd.DataFrame(data['results'], columns=data['columnHeaders'])
+        mondos = []
+        terms = []
 
-        # Rename columns
-        ontology_df.rename(columns={'Gene > Alleles > Symbol':'symbol', 
-                                    'Gene > Alleles > Name':'name', 
-                                    'Gene > Alleles > Primary Identifier':'primaryIdentifier', 
-                                    'Gene > Alleles > Ontology Annotations > Term Name':'ontologyName', 
-                                    'Gene > Alleles > Ontology Annotations > Ontology Term . Identifier':'ontologyID'}, inplace=True)
+        # Iterate diseases
+        for disease_tokens in disease_list:
 
-        # Filter DataFrame to only retain DOID ontology terms
-        ontology_df = ontology_df[ontology_df['ontologyID'].str.startswith('DOID:')]
+            # Extract MONDO and term
+            mondo, term = resolve_disease_tokens(disease_tokens)
 
-    # Handle Request Failure
-    except Exception as e:
-        logging.error(f'MouseMine Request Failed: {e}')
-        ValueError(f'MouseMine Request Failed: {e}')
+            if mondo:
+                mondos.append(mondo)
+                terms.append(term)
 
-    return ontology_df
+        mondos_col.append(mondos)
+        terms_col.append(terms)
 
+    # Assign results to HGVS DataFrame
+    clinvar_results['Associated Diseases'] = terms_col
+    clinvar_results['MONDO'] = mondos_col
 
-def get_doid_name(disease):
-    '''
-    Convert disease name to DOID using OLS API.
+    clinvar_results.drop('CLNDISDB', inplace=True, axis=1)
+
+    return clinvar_results
+
+def resolve_disease_tokens(tokens):
+    """
+    Given a list of tokens from a CLNDISDB disease entry, extracts MONDO term.
 
     Parameters:
-        disease: string. Disease name to convert.
+        tokens: list of str. Tokens from a CLNDISDB entry (disease IDs).
 
     Returns:
-        dictionary. Mapping label to ID of disease. Returns None if no match found.
-    '''
-    # Construct URL
-    url = ols_base_url + f'search?q={disease}&ontology=doid&exact=true'
+        tuple: MONDO ID (str) and MONDO term (str). If none found, (None, None).
+    """
+    for token in tokens:
 
-    # Log Request to OLS
-    logging.info(f'OLS Request: {url}')
+        # Direct MONDO entry
+        if token.startswith("MONDO:"):
+            _, mondo = token.split(":", 1)
+            return mondo, mondo_term_map.get(mondo)
 
-    try:
-        # Make request to OLS
-        request = requests.get(url)
-        request.raise_for_status()
+        # Normalize MedGen to UMLS
+        if token.startswith("MedGen:"):
+            token = "UMLS:" + token.split(":")[1]
 
-        # Extract data
-        data = request.json()
-        docs = data.get("response", {}).get("docs", [])
+        # Xref lookup
+        if token in mondo_xref_map:
+            mondo = mondo_xref_map[token]
+            return mondo, mondo_term_map.get(mondo)
 
-        # If no results return None
-        if not docs:
-            return None
-        
-        # Extract best match
-        doc = docs[0]
-
-    except Exception as e:
-        logging.error(f'OLS Request Failed: {e}')
-        ValueError(f'OLS Request Failed: {e}')
-
-    return {'label': doc.get('label'),
-            'DOID': doc.get('obo_id')}
-
-
-def fetch_doid_name(disease):
-    '''
-    Search disease name synonyms for DO name.
-
-    Parameters:
-        disease: string. Disease name to convert.
-
-    Returns:
-        string. DO disease name. Returns None if None found.
-    '''
-    doid_name = disease_mapping.get(disease.lower())
-
-    return doid_name
+    # No valid MONDO mapping
+    return None, None
 

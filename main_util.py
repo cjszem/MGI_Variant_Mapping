@@ -1,12 +1,11 @@
-import re
 import yaml
 import logging
 import pandas as pd
 from log_util import log_query, log_batch_query, log_results
-from vep_util import get_vep_data, fetch_vep_data, prepare_vep_output, get_domain_name
-from gene_util import get_gene_info, fetch_gene_info, fetch_mus_alleles
-from disease_util import get_clinvar_ids, get_disease_associations, fetch_assign_clinvar, search_clinvar, \
-                         fetch_mus_disease_map, mouse_disease_associations, get_doid_name, fetch_doid_name
+from vep_util import get_vep_data, fetch_vep_data, prepare_vep_output, get_domain_name, run_vep
+from gene_util import get_gene_info, fetch_gene_info, fetch_mus_alleles, fetch_homologous_gene
+from disease_util import get_clinvar_ids, get_disease_associations, assign_clinvar, fetch_mus_doid, clndisdb_to_mondo, map_doids_to_mondo
+from processing_util import prepare_input
 
 
 # Load config
@@ -22,55 +21,6 @@ homology_dict = dict(zip(homology_df['HumGeneSymbol'], homology_df['MusGeneSymbo
 
 
 # ---- Input ----
-def process_batch_query(input):
-    '''
-    Processes a string resulting from the batch input of variants with formatting:
-    chromosome:start-end:ref/allele
-
-    Parameters:
-        input: string. Multiline string containg all variants to process.
-
-    Returns: DataFrame. Containing Chromosome, Start, Ref, Alt, for each variant.
-    '''
-    # Regex pattern to match each line: gene:chromosome:start-end:ref/allele
-    pattern = r'^(\w+):(\d+)-(\d+):([ACGTacgt]+)/([ACGTacgt]+)$'
-
-    variants = []
-    # Go through each line
-    for line in input.splitlines():
-        if line.strip() == '':
-            continue
-        
-        # Extract inputted variant fields
-        match = re.match(pattern, line)
-        if match:
-            variants.append({'Chromosome': match.group(1),
-                             'Start': int(match.group(2)),
-                             'Stop': int(match.group(3)),
-                             'Ref': match.group(4),
-                             'Alt': match.group(5)})
-        
-    # Create pandas dataframe
-    variants = pd.DataFrame(variants)
-    variants.to_csv('./testing_results/batch_variants.csv', index=False)
-
-    return variants
-
-
-def prepare_hgvs(variants):
-    '''
-    Converts a DataFrame of variants into a list of HGHVS notations for VEP querying
-    
-    Parameters:
-        variants: DataFrame. containing Chromosome, Start, Ref, Alt.
-
-    Returns:
-        list of strings. HGVS notations (chrom:g.startRef>Alt).
-    '''
-    variants['HGVS'] = (variants['Chromosome'].astype(str) + ':g.' + variants['Start'].astype(str) + variants['Ref'] + '>' + variants['Alt'])
-
-    return variants
-
 
 # ---- Single ----
 def hvar_to_output(gene, chrom, start, end, ref, alt, assembly='GRCh38'):
@@ -253,10 +203,9 @@ def mvar_to_output(gene, assembly='GRCm39'):
 
 
     # Perpare HGVS for VEP
-    mouse_allele_df = prepare_hgvs(mouse_allele_df)
+    mouse_allele_df = prepare_input(mouse_allele_df)
     allele_map = mouse_allele_df[['HGVS', 'AlleleID', 'AlleleSymbol']]
 
-    print(allele_map)
 
     # Query VEP for each variant
     variant_vep = fetch_vep_data(mouse_allele_df['HGVS'].tolist(), 'mouse')
@@ -385,7 +334,7 @@ def score_output(human_gene_df, human_prt_df, mouse_gene_df, mouse_prt_df):
 
 
 # ---- Batch ----
-def batch_hvar_to_output(variants, assembly='GRCh38'):
+def batch_hvar(variants, assembly='GRCh38'):
     '''
     Annotate a batch of human variant using local gene metadata, Ensembl VEP, and ClinVar.
 
@@ -394,6 +343,7 @@ def batch_hvar_to_output(variants, assembly='GRCh38'):
     Returns
         gene_df: pandas.DataFrame. Gene-level metadata and input variant summary.
         protein_df: pandas.DataFrame. Transcript-level information.
+        input_gene_map
     '''
     # Check assembly
     if assembly != 'GRCh38':
@@ -404,28 +354,140 @@ def batch_hvar_to_output(variants, assembly='GRCh38'):
     log_batch_query(variants)
     
     # Prepare HGVS notation
-    variants = prepare_hgvs(variants)
+    variants, submission_map = prepare_input(variants)
+
 
     # Query VEP
-    vep_df = fetch_vep_data(variants['HGVS'].tolist(), 'human')
+    vep_df = run_vep(variants, 'homo_sapiens')
 
-    # Build gene table
-    genes = vep_df['gene_symbol'].unique()
-    gene_df = fetch_gene_info(genes, species='human')
+
+    # Assign input field
+    vep_df['Input'] = vep_df['Submission'].map(submission_map)
 
     # Clean VEP output into protein DataFrame
     protein_df = prepare_vep_output(vep_df, 'human')
 
+
+    # Create a human gene to input mapping DataFrame
+    input_gene_df = (protein_df[['Input', 'Gene Symbol']].drop_duplicates()
+                     .rename(columns={'Gene Symbol': 'Hum Gene'}).copy())
+
+    # Build gene table
+    genes = protein_df['Gene Symbol'].unique()
+    gene_df = fetch_gene_info(genes, species='human')
+
+
     # Disease Associations
-    disease_df = fetch_assign_clinvar(variants)
-    protein_df = protein_df.merge(disease_df, on='HGVS', how='left')
-    protein_df.rename({'diseases': 'Associated Diseases'}, axis=1, inplace=True)
+    disease_df = assign_clinvar(variants)
+    disease_df = clndisdb_to_mondo(disease_df)
+    protein_df = protein_df.merge(disease_df, on='Input', how='left')
+
 
     # Print resulting tables
-    print(gene_df)
-    print('----------')
-    print(protein_df)
-    print('----------')
-    
-    return gene_df, protein_df
+    # print(gene_df)
+    # print('----------')
+    # print(protein_df)
+    # print('----------')
+    # print(input_gene_df)
+    # print('----------')
 
+    return gene_df, protein_df, input_gene_df
+
+
+def batch_mvar(input_mapping_df, assembly='GRCm39'):
+    '''
+    Annotate a mouse variant using local gene metadata, Ensembl VEP, and MouseMine.
+
+    This function performs the following steps:
+        1. Fetch mouse gene metadata.
+        2. Identify all variants for the gene in MGI local database.
+        3. Call Ensembl VEP for each variant → transcript-level annotations.
+        4. Retrieve domain names from InterPro.
+        5. Query MouseMine for ontology annotations.
+
+    Parameters
+        hum_gene_df: df. Human gene DF 
+        assembly : string, optional. Genome assembly. Only "GRCm39" is supported.
+
+    Returns
+        gene_df: pandas.DataFrame. Gene-level metadata and input variant summary.
+        protein_df: pandas.DataFrame. Transcript-level information.
+    '''
+    # Check assembly
+    if assembly != 'GRCm39':
+        raise ValueError('Assembly must be GRCm39')
+    
+
+    # Extract Mus gene symbol
+    gene_input_df = fetch_homologous_gene(input_mapping_df)
+
+
+    # Build orthologous gene table
+    genes = gene_input_df['Mus Gene']
+    mus_gene_df = fetch_gene_info(genes, species='mouse')
+
+
+    # Extract gene ids
+    MGI_gene_ids = mus_gene_df['Accession'].unique()
+
+    # Fetch mouse alleles
+    mouse_allele_df = fetch_mus_alleles(MGI_gene_ids)
+
+
+    # Query MGD for ontology associations
+    doid_map = fetch_mus_doid(mouse_allele_df['AlleleID'].unique())
+
+    # Drop alleles without disease associations
+    mouse_allele_df = mouse_allele_df[mouse_allele_df['AlleleID'].isin(doid_map.keys())]
+
+
+    # Perpare HGVS for VEP
+    mouse_allele_df, _ = prepare_input(mouse_allele_df)
+    allele_map = mouse_allele_df[['Submission', 'Gene Symbol', 'AlleleID', 'AlleleSymbol']]
+
+
+    # Query VEP for each variant
+    variant_vep = run_vep(mouse_allele_df, 'mus_musculus')
+
+    # Clean VEP output
+    mouse_prt_df = prepare_vep_output(variant_vep, 'mouse')
+
+
+    # Map Alleles back to VEP output
+    allele_map = allele_map.rename(columns={'Gene Symbol': 'Gene Symbol Allele'})
+    mouse_prt_df = mouse_prt_df.merge(allele_map, on='Submission', how='left')
+
+
+    # Only keep Allele Gene Symbol
+    mouse_prt_df.drop('Gene Symbol', inplace=True, axis=1)
+    mouse_prt_df.rename(columns={'Gene Symbol Allele': 'Gene Symbol'}, inplace=True)
+
+
+    # Compute MONDO mapping
+    mondo_id_map, mondo_term_map = map_doids_to_mondo(doid_map)
+
+    # Insert into the variant df
+    mouse_prt_df['MONDO'] = mouse_prt_df['AlleleID'].map(mondo_id_map)
+    mouse_prt_df['Disease Association'] = mouse_prt_df['AlleleID'].map(mondo_term_map)
+
+
+    # Rearrange columns
+    mouse_prt_df = mouse_prt_df[['Gene Symbol', 'AlleleID', 'AlleleSymbol', 'Transcript ID', 'Biotype', 
+                                 'Exon Rank', 'Pfam Domain ID', 'Pfam Domain Name', 'Molecular Consequence', 
+                                 'Codon Switch', 'Amino Acids', 'refAA', 'varAA', 'Disease Association']]
+    
+
+    # Save debugging tables to CSVs
+    mouse_allele_df.to_csv('./testing_results/mouse_allele_df.csv', index=False)
+
+    # Print resulting tables
+    # print(mus_gene_df)
+    # print('----------')
+    # print(mouse_prt_df)
+    # print('----------')
+
+    return mus_gene_df, mouse_prt_df, gene_input_df
+
+
+def batch_score(hum_prt_df, mouse_prt_df, gene_input_df):
+    None

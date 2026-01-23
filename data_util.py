@@ -27,6 +27,26 @@ def parse_doid_obo(doid_path):
     json.dump(synonym_to_name, open('data/DOID/doid_map.json', 'w'), indent=4)
 
 
+def parse_mondo_obo(mondo_path):
+    graph = obonet.read_obo(mondo_path)
+
+    mondo_term_map = {}
+    mondo_xref_map = {}
+    for term, data in graph.nodes(data=True):
+        name = data.get("name")
+
+        id = term
+
+        mondo_term_map[id] = name
+
+        for x_id in data.get('xref', []):
+            x_ref = x_id.split(' ')[0]
+            mondo_xref_map[x_ref] = id
+
+    json.dump(mondo_term_map, open('data/MONDO/mondo_term_map.json', 'w'), indent=4)
+    json.dump(mondo_xref_map, open('data/MONDO/mondo_xref_map.json', 'w'), indent=4)
+
+
 def parse_ensembl_gff3(gff3_path, species):
     '''
     Parses Ensembl GFF3 file to extract gene information and saves it as a parquet file.
@@ -48,12 +68,5 @@ def parse_ensembl_gff3(gff3_path, species):
 
 
 if __name__ == '__main__':
-    parse_ensembl_gff3('data/Ensembl/Homo_sapiens.GRCh38.115.gff3.gz', 'human')
-    parse_ensembl_gff3('data/Ensembl/Mus_musculus.GRCm39.115.gff3.gz', 'mouse')
 
-
-    # cols = ['seqid','source','type','start','end','score','strand','phase','attributes']
-    # gene_df = pd.read_csv('data/Ensembl/Mus_musculus.GRCm39.115.gff3.gz', sep='\t', comment='#', compression='gzip', header=None, names=cols, low_memory=False)
-    # gene_df = gene_df[(gene_df['type'] == 'gene')]
-
-    # print(gene_df['attributes'].values[0])
+    parse_mondo_obo('data/MONDO/mondo.obo')
