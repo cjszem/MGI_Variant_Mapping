@@ -1,11 +1,11 @@
 .DS_Store
 __pycache__/
 
-data/NCBI/*
-data/Ensembl/Homo_sapiens.GRCh38.115.gff3.gz
-data/Ensembl/Mus_musculus.GRCm39.115.gff3.gz
-data/Ensembl/mouse_gene_data.tsv
+app/data/NCBI/*
+app/data/Ensembl/Homo_sapiens.GRCh38.115.gff3.gz
+app/data/Ensembl/Mus_musculus.GRCm39.115.gff3.gz
 
-results/
-testing_results/
-testing/
+app/results/
+app/testing_results/
+app/testing/
+app/processing/

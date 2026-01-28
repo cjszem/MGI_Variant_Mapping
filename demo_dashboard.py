@@ -1,22 +1,22 @@
 import streamlit as st
 import streamlit.components.v1 as components
 import base64
-from main_util import hvar_to_output, mvar_to_output, score_output, batch_hvar, batch_mvar
-from processing_util import process_batch_query
+from app.main_util import hvar_to_output, mvar_to_output, score_output, batch_hvar, batch_mvar, batch_score
+from app.processing_util import process_batch_query
 
 
 # ---- CONFIGURATION ----
-st.set_page_config(page_title="Variant Mapping Query", layout="wide", )
+st.set_page_config(page_title='Variant Mapping Query', layout='wide')
 
 
 # ---- TITLE ----
 # Extract the abse64 string of MGI logo for html display
 def get_image_base64(path):
-    with open(path, "rb") as f:
+    with open(path, 'rb') as f:
         data = f.read()
     return base64.b64encode(data).decode()
 
-mgi_base64 = get_image_base64('logos/mgi_logo.png')
+mgi_base64 = get_image_base64('static/logos/mgi_logo.png')
 
 # Title and Logo
 title_html = f"""
@@ -101,8 +101,11 @@ with batch_tab:
         variants = process_batch_query(batch_input)
         hum_gene_df, hum_prt_df, input_gene_df = batch_hvar(variants)
         mouse_gene_df, mouse_prt_df, gene_input_df = batch_mvar(input_gene_df)
+        score_df = batch_score(hum_prt_df, mouse_prt_df, gene_input_df)
+
 
         st.dataframe(hum_gene_df, hide_index=True)
         st.dataframe(hum_prt_df, hide_index=True)
         st.dataframe(mouse_gene_df, hide_index=True)
         st.dataframe(mouse_prt_df, hide_index=True)
+        st.dataframe(score_df, hide_index=True)

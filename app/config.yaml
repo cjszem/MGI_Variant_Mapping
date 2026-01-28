@@ -1,0 +1,23 @@
+api:
+  email: "cole.szeman@jax.org"
+  ensembl_base_url: "https://rest.ensembl.org"
+  interpro_base_url: "https://www.ebi.ac.uk/interpro/api/entry/pfam/"
+  mousemine_base_url: "https://www.mousemine.org/mousemine/service/query/results"
+  ols_base_url: "https://www.ebi.ac.uk/ols4/api/"
+
+paths:
+  clinvar_vcf: "app/data/NCBI/clinvar.grch38.vcf.gz"
+  mgi_alleles: "app/data/MGI/VARIANT-ALLELE-MGI.tsv"
+  mgi_homology: "app/data/MGI/HOM_ProteinCoding.rpt"
+  mgi_disease: "app/data/MGI/MGI_DiseaseMouseModel.rpt"
+  doid_map: "app/data/DOID/doid_map.json"
+  mouse_gene_pqt: "app/data/Ensembl/mouse_gene_data.parquet"
+  human_gene_pqt: "app/data/Ensembl/human_gene_data.parquet"
+  vep_cache: "/Users/szemac/.vep"
+  vep_processing: "/Users/szemac/Desktop/MGI_Variant_Mapping/app/processing/vep"
+
+logging:
+  file: "app/mapping.log"
+  level: "INFO"
+  format: "%(asctime)s - %(levelname)s - %(message)s"
+

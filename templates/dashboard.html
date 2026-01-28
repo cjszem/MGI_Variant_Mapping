@@ -1,0 +1,59 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <meta charset="UTF-8">
+    <title>Variant Mapping</title>
+    <link rel="icon" type="image/x-icon" href="static/logos/HMVM.png">
+    <link rel="stylesheet" href="/static/styles.css">   <!-- Link external CSS -->
+</head>
+
+
+
+<body>
+
+    <div class="headerContainer">
+
+        <img src="/static/logos/mgi_logo.png" class="headerImage">
+
+        <nav class="navbar">
+            <a href="https://www.informatics.jax.org/">Home</a>
+            <a href="https://www.findmice.org/index.jsp">Find Mice (IMSR)</a>
+            <a href="https://www.informatics.jax.org/mgihome/support/mgi_inbox.shtml">Contact Us</a>
+        </nav>
+
+        <img src="/static/logos/JAX_logo_RGB.png" class="headerImage">
+
+    </div>
+
+    <h1>Human - Mouse: Variant Mapping</h1>
+
+    <div class="searchContainer">
+
+        <h2>Submit Variants:</h2>
+
+        <p class="instruction">
+            Input one variant per line, in the format: chromosome:start-end:ref/alt.
+        </p>
+
+        <div>
+            <textarea id="variantInput" rows="8" cols="50" placeholder="Example:
+2:157774114-157774114:C/T
+1:39468726-39468726:T/G"></textarea>
+        </div>
+
+        <div>
+            <button id="runButton">Submit</button>
+        </div>
+
+    </div>
+
+    <div id="output"></div>
+    <div id="sidebar"></div>
+    <button id="downloadJSON">Download All Data</button>
+    
+
+    <script src="/static/app.js"></script>
+
+</body>
+</html>
