@@ -7,86 +7,67 @@ This thesis will be completed in partnership with Dr. Carol Bult at JAX Lab, aim
 ## Background
 Genome sequencing has become increasingly prevalent in clinical practice; however, efficiently connecting sequence variants identified in patients with clinical significance remains a significant challenge. The Jackson Lab Informatics team has developed the Mouse Genome Database (MGD, http://www.informatics.jax.org), which contains information acquired from the scientific literature about genotype-to-phenotype associations in the laboratory mouse (1). These data can be used to assert clinical relevance of human variants; however, it is currently very labor intensive to perform this on a large collection of genomic variants. The software developed for this project will bridge the gap between human sequence variants and mouse models with known phenotypes or human disease relevance. This software will allow for the immediate discovery of clinically relevant mouse models, which can be used to determine the best course of action and assess possible health consequences of variants discovered in patients, with a final goal of providing more successful health outcomes and personalized treatment for patients.
 
-## Testing
-The steps for testing the proejct in is current state are as follows:
-
+## Running
+To run the server locally follow the steps below:
 1. Download the repository and ceate a working directory.
+
+2. Download a dockerized version of ensembl-vep and homo_sapiens and mus_musculous caches.
 
 2. Create the conda environment using the provided yml file. All remaining steps occur within this environment.
 ```
 conda env create -f environment.yml
 ```
 
-3. Insert test variables into var_extraction.py.
+3. Run the server using uvicorn.
 ```
-gene = 'ACVR1'
-start = 157774114
-end = 157774114
-chrom = 2
-ref = 'C'
-alt = 'T'
+uvicorn server:app --reload
 ```
 
-4. Run var_extraction, either in terminal or using IDE 'Run' button.
-```
-python var_extraction.py
-```
+4. Insert a list of variants into the search field and submit the 
 
-5. Examine output (both printed and generated CSV files available).
+5. Examine output.
 
 ## Output
 
-There are currently 7 printed outputs for examination:
 1. Human gene table: Provides information on the given variant on a gene level.
 ```
-  Organism   Gene                Description      HGNC       Ensembl ID         Biotype  Strand  Chr      Start        End Ref Alt
-0    Human  ACVR1  activin A receptor type 1  HGNC:171  ENSG00000115170  protein_coding      -1    2  157774114  157774114   C   T
+Gene Symbol Description Biotype Chromosome  Start	End	Strand	Ensembl_ID	Accession
+ACVR1 activin A receptor type 1	protein_coding	2	157736249	157876347	-	ENSG00000115170	HGNC:171
 ```
 
-2. Human protein table: Provides information on the given variant on a transcript level.
+2. Human variant table: Provides information on the given variant on a transcript level.
 ```
-     Transcript ID         Biotype Exon Rank Pfam Domain ID  ... Amino Acids refAA  varAA                                Associated Diseases
-0  ENST00000434821  protein_coding      6/11        PF08515  ...       R206H     R      H  Progressive myositis ossificans; not provided;...
+Gene Symbol	Transcript ID	Biotype	Exon Rank	Pfam Domain ID	Pfam Domain Name	Polyphen Prediction	Polyphen Score	Molecular Consequence	Codon Switch	Amino Acids	Associated Diseases	MONDO
+ACVR1	ENST00000434821	protein_coding	6/11	PF08515	Transforming growth factor beta type I GS-motif	probably_damaging	0.999	missense_variant	cGc/cAc	R206H	fibrodysplasia ossificans progressiva MONDO:0007606
 ```
 3. Mouse gene table: Provides information on the given orthologous variant on a gene level.
 ```
-  Organism   Gene                 Description       HGNC          Ensembl ID         Biotype  Strand
-0    Mouse  Acvr1  activin A receptor, type 1  MGI:87911  ENSMUSG00000026836  protein_coding      -1
+Gene Symbol	Description	Biotype	Chromosome	Start	End	Strand	Ensembl_ID	Accession
+Acvr1	activin A receptor%2C type 1	protein_coding	2	58278656	58457169	-	ENSMUSG00000026836	MGI:87911
 ```
-4. Mouse allele table: Provides all extracted mouse alleles with genomic data.
+4. Mouse model table: Provides information on the given orthologous variant on a transcript level.
 ```
-         Gene     AlleleId Chromosome     Start       End Ref Alt Molecular Consequence
-55198   Acvr1  MGI:6140231          2  58364210  58364211  GC  AT      missense_variant
-64079   Acvr1  MGI:5763014          2  58364211  58364211   C   T      missense_variant
-67727   Acvr1  MGI:5471642          2  58364211  58364211   C   T      missense_variant
-101505  Acvr1  MGI:6414911          2  58352976  58352976   C   A      missense_variant
-112037  Acvr1  MGI:6414907          2  58352976  58352976   C   A      missense_variant
-```
-5. Mouse protein table: Provides information on the given orthologous variant on a transcript level.
-```
-       AlleleId       transcript_id         biotype   exon  domains  ... refAA varAA primaryIdentifier                           ontologyName  ontologyID
-0   MGI:6140231  ENSMUST00000056376  protein_coding   6/11  PF08515  ...     R     H       MGI:6140231  fibrodysplasia ossificans progressiva  DOID:13374
-1   MGI:6140231  ENSMUST00000090935  protein_coding   8/13  PF08515  ...     R     H       MGI:6140231  fibrodysplasia ossificans progressiva  DOID:13374
-2   MGI:6140231  ENSMUST00000112599  protein_coding   5/10  PF08515  ...     R     H       MGI:6140231  fibrodysplasia ossificans progressiva  DOID:13374
-3   MGI:6140231  ENSMUST00000112601  protein_coding   7/12  PF08515  ...     R     H       MGI:6140231  fibrodysplasia ossificans progressiva  DOID:13374
-4   MGI:6140231  ENSMUST00000126407  protein_coding    NaN  PF08515  ...   nan  None       MGI:6140231  fibrodysplasia ossificans progressiva  DOID:13374
-5   MGI:5763014  ENSMUST00000056376  protein_coding   6/11  PF08515  ...     R     H       MGI:5763014  fibrodysplasia ossificans progressiva  DOID:13374
+Gene Symbol	AlleleID	AlleleSymbol	Transcript ID	Biotype	Exon Rank	Pfam Domain ID	Pfam Domain Name	Molecular Consequence	Codon Switch	Amino Acids	Associated Diseases	MONDO
+Acvr1	MGI:6140231	Acvr1tm1Glh	ENSMUST00000056376	protein_coding	6/11	PF08515	Transforming growth factor beta type I GS-motif	missense_variant	cGC/cAT	R206H	fibrodysplasia ossificans progressiva	MONDO:0007606
+Acvr1	MGI:6140231	Acvr1tm1Glh	ENSMUST00000090935	protein_coding	8/13	PF08515	Transforming growth factor beta type I GS-motif	missense_variant	cGC/cAT	R206H	fibrodysplasia ossificans progressiva	MONDO:0007606
+Acvr1	MGI:6140231	Acvr1tm1Glh	ENSMUST00000112599	protein_coding	5/10	PF08515	Transforming growth factor beta type I GS-motif	missense_variant	cGC/cAT	R206H	fibrodysplasia ossificans progressiva	MONDO:0007606
+Acvr1	MGI:6140231	Acvr1tm1Glh	ENSMUST00000112601	protein_coding	7/12	PF08515	Transforming growth factor beta type I GS-motif	missense_variant	cGC/cAT	R206H	fibrodysplasia ossificans progressiva	MONDO:0007606
 ...
 ```
-6. Unused mouse alleles: List of all possible orthologous mouse alleles without documented genomic information.
+5. Model equivalence table: Boolean match values for each mouse transcript
 ```
-['MGI:7486439', 'MGI:7309408', 'MGI:2651395', 'MGI:1857711', 'MGI:1931734', 'MGI:3696672', 'MGI:7309409', 'MGI:7376166', 'MGI:4399476', 'MGI:5548914']
-```
-7. Variant scoring table: Boolean match values for each mouse transcript
-```
-    biotype_match  exon_match  domain_match  consequence_match  AA_match  disease_match  total_score
-0            True        True          True               True      True           True   100.000000
-1            True       False          True               True      True           True    83.333333
-2            True       False          True               True      True           True    83.333333
-3            True       False          True               True      True           True    83.333333
-4            True       False          True              False     False           True    50.000000
-5            True        True          True               True      True           True   100.000000
+Allele ID	Allele Symbol	Transcript ID	Biotype Match	Consequence Match	AA Match	AA Position Match	Exon Match	Domain Match	Disease Match	total_score
+MGI:6140231	Acvr1tm1Glh	ENSMUST00000056376	true	true	true	true	true	true	true	100
+MGI:6140231	Acvr1tm1Glh	ENSMUST00000090935	true	true	true	true	false	true	true	85
+MGI:6140231	Acvr1tm1Glh	ENSMUST00000112599	true	true	true	true	false	true	true	85
+MGI:6140231	Acvr1tm1Glh	ENSMUST00000112601	true	true	true	true	false	true	true	85
 ...
 ```
-
+6. Mouse phenotype table: Provides detailed phenotype information on all alleles in gene.
+```
+Gene Symbol	AlleleID	AlleleSymbol	Allele Symbol	Phenotypes
+Acvr1	MGI:6140231	Acvr1tm1Glh	Acvr1	MP:0005390,skeleton phenotype
+Acvr1	MGI:1857711	Acvr1tm1Enl	Acvr1	MP:0001672,abnormal embryo development,MP:0001675,abnormal ectoderm development,MP:0001683,absent mesoderm,MP:0001695,abnormal gastrulation,MP:0001698,decreased embryo size,MP:0001710,absent amniotic folds,MP:0002230,abnormal primitive streak formation,MP:0003087,absent allantois,MP:0005030,absent amnion,MP:0009593,absent chorion,MP:0011098,embryonic lethality during organogenesis, complete penetrance,MP:0011186,abnormal visceral endoderm morphology,MP:0011190,thick embryonic epiblast
+...
+```
 All outputs are also stored in the corresponding CSV files.
