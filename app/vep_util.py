@@ -235,11 +235,11 @@ def fetch_vep_data(variants, species):
         return pd.DataFrame()
 
 
-def prepare_vep_output(vep_df, species):
+def prepare_vep_output(vep_df):
     '''
     Cleans VEP output for desired protein information and format.
 
-    Inputs:
+    Parameters:
         vep_df: DataFrame. Vep output from fetch_vep_data function.
     
     Returns:
@@ -247,14 +247,20 @@ def prepare_vep_output(vep_df, species):
         Polyphen Score, Molecular Consequence, Codon Switch, Amino Acids, refAA, varAA.
     '''
     # Split amino_acids to REFAA and VARAA if in X/Y format
-    aa_split = vep_df['amino_acids'].astype(str).str.split('/', expand=True)
-    vep_df['refAA'] = aa_split[0]
-    vep_df['varAA'] = aa_split[1]
+    vep_df['protein_start'] = vep_df['protein_start'].astype('Int64')
 
+    # Extract ref/var AA
+    extracted = vep_df['amino_acids'].str.strip().str.extract(r'^(?P<refAA>[^/]+)/(?P<varAA>[^/]+)$')
 
-    # Add protein location of amino_acids
-    vep_df['protein_start'] = vep_df['protein_start'].astype(pd.Int64Dtype())
-    vep_df['amino_acids'] = vep_df.apply(lambda row: f"{row['refAA']}{row['protein_start']}{row['varAA']}", axis=1)
+    vep_df['refAA'] = extracted['refAA']
+    vep_df['varAA'] = extracted['varAA']
+
+    # Build the change string
+    ref_str = vep_df['refAA'].astype('string')
+    pos_str = vep_df['protein_start'].astype('string')
+    var_str = vep_df['varAA'].astype('string')
+
+    vep_df['amino_acids'] = ref_str.str.cat(pos_str).str.cat(var_str)
 
 
     # Merge consequence terms into a single string
@@ -374,15 +380,13 @@ def parse_vep_json(input_file='app/processing/vep/output.json'):
             df = pd.json_normalize(consequences)
 
             # Keep only columns you care about
-            keep = [
-                'gene_symbol', 'transcript_id',
-                'polyphen_prediction', 'polyphen_score',
-                'amino_acids', 'protein_start',
-                'consequence_terms', 'exon',
-                'domains', 'codons',
-                'impact', 'biotype',
-                'hgvsp', 'hgvsc'
-            ]
+            keep = ['gene_symbol', 'transcript_id',
+                    'polyphen_prediction', 'polyphen_score',
+                    'amino_acids', 'protein_start',
+                    'consequence_terms', 'exon',
+                    'domains', 'codons',
+                    'impact', 'biotype',
+                    'hgvsp', 'hgvsc']
             df = df[[c for c in keep if c in df.columns]]
 
             # Extract Pfam domain

@@ -56,7 +56,7 @@ def batch_hvar(variants, assembly='GRCh38'):
     vep_df['Input'] = vep_df['Submission'].map(submission_map)
 
     # Clean VEP output into protein DataFrame
-    protein_df = prepare_vep_output(vep_df, 'human')
+    protein_df = prepare_vep_output(vep_df)
 
 
     # Create a human gene to input mapping DataFrame
@@ -154,7 +154,7 @@ def batch_mvar(input_mapping_df, assembly='GRCm39'):
     variant_vep = run_vep(mouse_prt_df, 'mus_musculus')
 
     # Clean VEP output
-    mouse_prt_df = prepare_vep_output(variant_vep, 'mouse')
+    mouse_prt_df = prepare_vep_output(variant_vep)
 
     # Drop transcripts not in homologous gene
     mouse_prt_df = mouse_prt_df[mouse_prt_df['Gene Symbol'].isin(genes)]
