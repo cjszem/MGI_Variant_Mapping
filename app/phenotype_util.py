@@ -7,13 +7,19 @@ with open('app/config.yaml') as f:
     config = yaml.safe_load(f)
 
 
-# MGI_phenotype_df = pd.read_csv(config['paths']['mgi_phenotype'], sep='\t')
-# MGI_phenotype_df = MGI_phenotype_df.set_index('Allele ID')
+MGI_phenotype_df = pd.read_csv(config['paths']['mgi_phenotype'], sep='\t')
+MGI_phenotype_df = MGI_phenotype_df.set_index('Allele ID')
 
 def allele_phenotype_match(allele_df):
-    MGI_phenotype_df = pd.read_csv(config['paths']['mgi_phenotype'], sep='\t', usecols=['Allele ID', 'Phenotypes']) 
-    MGI_phenotype_df = MGI_phenotype_df.set_index('Allele ID')
-    
+    '''
+    Pairs MGI alleles with their detailed list of phenotypes.
+
+    Parameters:
+        allele_df. DataFrame. Expects AlleleID, AlleleSymbol, Chromosome, Start, End, Ref, Alt, Molecular Consequence.
+
+    Returns:
+        DataFrame. Contains AlleleID, AlleleSymbol, Phenotypes.
+    '''
     phenotype_df = allele_df.join(MGI_phenotype_df, on='AlleleID', how='inner')
 
     phenotype_df.drop(['Chromosome', 'Start', 'End', 'Ref', 'Alt', 'Molecular Consequence'], inplace=True, axis=1)

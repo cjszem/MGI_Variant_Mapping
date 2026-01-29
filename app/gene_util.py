@@ -148,6 +148,15 @@ def fetch_mus_alleles(MGI_gene_ids):
     return mouse_allele_df
 
 def process_mus_alleles(mouse_allele_df):
+    '''
+    Filters alleles to one with genomic coordinates listed and makes this integers.
+
+    Parameters:
+        mouse_allele_df: DataFrame. MGI allele information.
+    
+    Returns:
+        DataFrame. Contains mouse allele information to continue through pipeline.
+    '''
     
     mouse_prt_df = mouse_allele_df[mouse_allele_df['Start'].notnull()]
 

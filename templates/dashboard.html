@@ -5,13 +5,15 @@
     <meta charset="UTF-8">
     <title>Variant Mapping</title>
     <link rel="icon" type="image/x-icon" href="/static/logos/HMVM.png">
-    <link rel="stylesheet" href="/static/styles.css">   <!-- Link external CSS -->
-    
-    <link rel="stylesheet" href="https://cdn.datatables.net/1.13.6/css/jquery.dataTables.min.css">
+
+    <!-- Link external CSS -->
+    <link rel="stylesheet" href="/static/styles.css">
+
+    <!-- Link external DataTable style -->
+    <link rel="stylesheet" href="https://cdn.datatables.net/1.13.6/css/jquery.dataTables.min.css"> 
     <script src="https://code.jquery.com/jquery-3.7.0.min.js"></script>
     <script src="https://cdn.datatables.net/1.13.6/js/jquery.dataTables.min.js"></script>
 </head>
-
 
 
 <body>
@@ -36,12 +38,11 @@
 
         <h2>Submit Variants:</h2>
 
-        <p class="instruction">
-            Input one variant per line, in the format: chromosome:start-end:ref/alt.
-        </p>
+        <p class="instruction"> Input one variant per line, in the format: chromosome:start-end:ref/alt.</p>
 
         <div>
-            <textarea id="variantInput" rows="8" cols="50" placeholder="Example:
+            <textarea id="variantInput" rows="8" cols="50" 
+            placeholder="Example:
 2:157774114-157774114:C/T
 1:39468726-39468726:T/G"></textarea>
         </div>
@@ -56,13 +57,10 @@
 
     </div>
 
-    
     <div id="layoutOutput">
         <div id="sidebar"></div>
         <div id="results"></div>
     </div>
-
-
 
     <script src="/static/app.js"></script>
 

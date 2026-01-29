@@ -141,7 +141,15 @@ def get_vep_data(chromosome, start, end, alt, species='human'):
 
 
 def extract_pfam_name(domain_list):
-    """Extract first Pfam domain name from a VEP domains list."""
+    '''
+    Extract first Pfam domain name from a VEP domains list.
+    
+    Parameters:
+        domain_list: list of dicts. Output from VEP.
+    
+    Returns:
+        str. Pfam domain ID or None.
+    '''
     if not isinstance(domain_list, list):
         return None
     for d in domain_list:
@@ -395,6 +403,16 @@ def parse_vep_json(input_file='app/processing/vep/output.json'):
     return vep_df
 
 def run_vep(variants, species):
+    '''
+    Runs VEP using help functions.
+
+    Parameters:
+        variants: DataFrame. Contains Chromosome, Start, Ref, Alt
+        species: str. Either 'homo_sapiens' or 'mus_musculus'.
+    
+    Returns:
+        DataFrame. VEP Output.
+    '''
 
     docker_input(variants)
 

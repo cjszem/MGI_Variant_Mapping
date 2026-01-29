@@ -1,7 +1,5 @@
+// Run variant-model mapping for submitted variants on click.
 document.getElementById('runButton').addEventListener('click', function () {
-    /**
-     * Run's variant-model mapping for submitted variants on click.
-     */
     const text = document.getElementById('variantInput').value;
 
     fetch('http://localhost:8000/run_variants', {
@@ -24,13 +22,17 @@ document.getElementById('runButton').addEventListener('click', function () {
 // Build the sidebar with one button per input variant
 function buildSidebar(data) {
     const sidebar = document.getElementById('sidebar');
+
+    // Create sidebar header
     sidebar.innerHTML = '<h3>Inputs:</h3>';
 
+    // Handle no results
     if (!data.human_genes || data.human_genes.length === 0) {
         sidebar.innerHTML += '<h2>No inputs found.</h2>';
         return;
     }
 
+    // Create sidebar buttons
     data.human_proteins.forEach((row, idx) => {
         const btn = document.createElement('button');
         btn.className = 'sidebar-button';
@@ -49,6 +51,7 @@ function buildSidebar(data) {
         sidebar.appendChild(btn);
     });
 
+    // Unhide results
     document.getElementById("layoutOutput").style.display = "flex";
 }
 
@@ -56,8 +59,10 @@ function buildSidebar(data) {
 // Render all tables for the selected input
 function renderTables(input, gene) {
 
+    // Extract homolog
     homolog = window.fullJSON.gene_mapping.find(r => r['Hum Gene'] === gene)?.['Mus Gene']
 
+    // Extract relevant tables
     const humGenes = window.fullJSON.human_genes.filter(row => row['Gene Symbol'] === gene);
     const humProteins = window.fullJSON.human_proteins.filter(row => row['Input'] === input);
     const mouseGenes = window.fullJSON.mouse_genes.filter(row => row['Gene Symbol'] === homolog);
@@ -65,6 +70,7 @@ function renderTables(input, gene) {
     const scores = window.fullJSON.scores.filter(row => row['Input'] === input);
     const phenotypes = window.fullJSON.phenotypes.filter(row => row['Gene Symbol'] === homolog);
 
+    // Create HTML tables
     results.innerHTML = `
         <div class='tableWrapper'>
             <h2>Human Gene</h2>
@@ -99,6 +105,7 @@ function renderTables(input, gene) {
     `;
 
 
+    // Create DataTable elements
     $('#humGenesTable').DataTable({
         columnDefs: [{ targets: [], visible: false }],
         dom: 't',
@@ -136,6 +143,7 @@ function renderTables(input, gene) {
     });
 }
 
+
 // Turn an array of objects into an HTML table
 function jsonToHTMLTable(data, tableId) {
     if (!data || data.length === 0) return "<p>No data</p>";
@@ -165,16 +173,15 @@ function jsonToHTMLTable(data, tableId) {
 }
 
 
-
 // Download full JSON for all data
 document.getElementById('downloadJSON').addEventListener('click', function () {
-    if (!window.fullResults) {
+    if (!window.fullJSON) {
         alert('No results yet.');
         return;
     }
 
     const dataStr = 'data:text/json;charset=utf-8,' +
-        encodeURIComponent(JSON.stringify(window.fullResults, null, 2));
+        encodeURIComponent(JSON.stringify(window.fullJSON, null, 2));
 
     const a = document.createElement('a');
     a.setAttribute('href', dataStr);

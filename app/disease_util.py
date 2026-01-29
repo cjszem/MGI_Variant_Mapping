@@ -130,6 +130,12 @@ def get_disease_associations(clinvar_id):
 def assign_clinvar(variants):
     '''
     Fetch ClinVar disease associations for a list of variants.
+
+    Parameters:
+        variants: DataFrame. Expects Input, Chromosome, STart, Stop, Ref, Alt.
+    
+    Returns:
+        DataFrame. Contains Input and CLINDISDB.
     '''
     results = []
 
@@ -206,6 +212,12 @@ def fetch_mus_doid(allele_ids):
 def map_doids_to_mondo(doid_map):
     '''
     Convert {AlleleID: {DOID}} to a long table, merge MONDO info, then collapse back into per-allele lists.
+
+    Parameters:
+        doid_map: dict. Mapping of AlleleID to DOID.
+
+    Returns:
+        tuple of dicts. Mapping of AlleleID to MONDO ID and mapping of AlleleID to Disease Association terms.
     '''
     # Normalize to long df
     rows = [{'AlleleID': allele, 'DOID': doid}

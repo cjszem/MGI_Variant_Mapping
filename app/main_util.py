@@ -33,7 +33,7 @@ def batch_hvar(variants, assembly='GRCh38'):
     Returns
         gene_df: pandas.DataFrame. Gene-level metadata and input variant summary.
         protein_df: pandas.DataFrame. Transcript-level information.
-        input_gene_map
+        input_gene_df: pandas.DataFrame. Gene mapping to input.
     '''
     s = time.time()
     # Check assembly
@@ -111,6 +111,8 @@ def batch_mvar(input_mapping_df, assembly='GRCm39'):
     Returns
         gene_df: pandas.DataFrame. Gene-level metadata and input variant summary.
         protein_df: pandas.DataFrame. Transcript-level information.
+        phenotype_df: pandas.DataFrame. Allele phenotype annotation.
+        gene_input_df: pandas.DataFrame. Gene mapping to input and homolog.
     '''
     s = time.time()
     # Check assembly
@@ -206,6 +208,15 @@ def batch_mvar(input_mapping_df, assembly='GRCm39'):
 
 def batch_score(hum_prt, mouse_prt, gene_inputs):
     '''
+    Creates score DF for human and mouse results.
+
+    Parameters:
+        hum_prt: pandas.DataFrame. Human variant dataframe.
+        mouse_prt: pandas.DataFrame. Mouse model dataframe.
+        gene_inputs: pandas.DataFrame. Gene-homolog-input mapping dataframe.
+
+    Returns:
+        pandas.DataFrame. contains score information for each variant-model pair.
     '''
     s = time.time()
     hum_prt['MONDO_set'] = hum_prt['MONDO'].apply(set)
