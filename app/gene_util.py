@@ -133,8 +133,7 @@ def fetch_mus_alleles(MGI_gene_ids):
         DataFrame. Containing Gene, AlleleID, AlleleSymbol, Chromosome, Start, End, Ref, Alt, Molecular Consequence.
     '''
     # Only retain variants with logged genomic information
-    mouse_select = mus_alleles_df[(mus_alleles_df['AlleleAssociatedGeneId'].isin(MGI_gene_ids)) &
-                                  (mus_alleles_df['StartPosition'].notnull())]
+    mouse_select = mus_alleles_df[(mus_alleles_df['AlleleAssociatedGeneId'].isin(MGI_gene_ids))]
 
     # Create allele DataFrame
     mouse_allele_df = pd.DataFrame()
@@ -143,12 +142,17 @@ def fetch_mus_alleles(MGI_gene_ids):
     new_cols = ['Gene Symbol', 'AlleleID', 'AlleleSymbol', 'Chromosome', 'Start', 'End', 'Ref', 'Alt'] # Corresponding column names for mouse_allele_df
     mouse_allele_df[new_cols] = mouse_select[old_cols] # Update column names
 
-
     # Extract primary Molecular Consequence term
     mouse_allele_df['Molecular Consequence'] = mouse_select['MostSevereConsequenceName'].str.split(',').str[0]
 
-    # Convert coordinates to integers
-    mouse_allele_df['Start'] = mouse_allele_df['Start'].astype(int)
-    mouse_allele_df['End'] = mouse_allele_df['End'].astype(int)
-
     return mouse_allele_df
+
+def process_mus_alleles(mouse_allele_df):
+    
+    mouse_prt_df = mouse_allele_df[mouse_allele_df['Start'].notnull()]
+
+    # Convert coordinates to integers
+    mouse_prt_df['Start'] = mouse_prt_df['Start'].astype(int)
+    mouse_prt_df['End'] = mouse_prt_df['End'].astype(int)
+
+    return mouse_prt_df

@@ -4,8 +4,12 @@
 <head>
     <meta charset="UTF-8">
     <title>Variant Mapping</title>
-    <link rel="icon" type="image/x-icon" href="static/logos/HMVM.png">
+    <link rel="icon" type="image/x-icon" href="/static/logos/HMVM.png">
     <link rel="stylesheet" href="/static/styles.css">   <!-- Link external CSS -->
+    
+    <link rel="stylesheet" href="https://cdn.datatables.net/1.13.6/css/jquery.dataTables.min.css">
+    <script src="https://code.jquery.com/jquery-3.7.0.min.js"></script>
+    <script src="https://cdn.datatables.net/1.13.6/js/jquery.dataTables.min.js"></script>
 </head>
 
 
@@ -46,12 +50,19 @@
             <button id="runButton">Submit</button>
         </div>
 
+        <div>
+            <button id="downloadJSON">Download All Results</button>
+        </div>
+
     </div>
 
-    <div id="output"></div>
-    <div id="sidebar"></div>
-    <button id="downloadJSON">Download All Data</button>
     
+    <div id="layoutOutput">
+        <div id="sidebar"></div>
+        <div id="results"></div>
+    </div>
+
+
 
     <script src="/static/app.js"></script>
 

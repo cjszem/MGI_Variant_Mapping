@@ -128,9 +128,9 @@ def get_disease_associations(clinvar_id):
 
 
 def assign_clinvar(variants):
-    """
+    '''
     Fetch ClinVar disease associations for a list of variants.
-    """
+    '''
     results = []
 
     # Precompute HGVS list
@@ -204,10 +204,9 @@ def fetch_mus_doid(allele_ids):
     return doid_allele_dict
 
 def map_doids_to_mondo(doid_map):
-    """
-    Convert {AlleleID: {DOID}} to a long table, merge MONDO info,
-    then collapse back into per-allele lists.
-    """
+    '''
+    Convert {AlleleID: {DOID}} to a long table, merge MONDO info, then collapse back into per-allele lists.
+    '''
     # Normalize to long df
     rows = [{'AlleleID': allele, 'DOID': doid}
             for allele, doids in doid_map.items()
@@ -236,7 +235,6 @@ def clndisdb_to_mondo(clinvar_results):
     Returns:
         DataFrame. with added 'MONDO' and 'Associated Diseases' columns.
     '''
-
     mondos_col = []
     terms_col = []
 
@@ -268,7 +266,7 @@ def clndisdb_to_mondo(clinvar_results):
     return clinvar_results
 
 def resolve_disease_tokens(tokens):
-    """
+    '''
     Given a list of tokens from a CLNDISDB disease entry, extracts MONDO term.
 
     Parameters:
@@ -276,7 +274,7 @@ def resolve_disease_tokens(tokens):
 
     Returns:
         tuple: MONDO ID (str) and MONDO term (str). If none found, (None, None).
-    """
+    '''
     for token in tokens:
 
         # Direct MONDO entry

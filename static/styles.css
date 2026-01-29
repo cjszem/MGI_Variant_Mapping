@@ -1,16 +1,17 @@
 body {
-    font-family: Verdana, sans-serif;
+    font-family: 'Inter', sans-serif;
     background-color: #f8f9fa;
     color: #333;
     margin: 0;
     padding: 0;
+    box-sizing: border-box;
 }
 
 h1 {
     text-align: center;
     color: #333;
     font-weight: 550;
-    font-size: 28px
+    font-size: 28px;
 }
 
 h2 {
@@ -22,24 +23,20 @@ h2 {
     margin-top: 10px;
 }
 
-input {
-    padding: 8px;
-    width: 300px;
-}
-
+/* DEFAULT BUTTON */
 button {
     padding: 8px 14px;
     margin-top: 15px;
     background-color: #587da1;
     color: white;
-    border: #0055aa;
+    border: #1C2A66;
     border-radius: 4px;
     cursor: pointer;
     transition: 0.2s ease-in-out;
 }
 
 button:hover {
-    background-color: #09508c;
+    background-color: #1C2A66;
     transform: translateY(-2px);
 }
 
@@ -47,6 +44,7 @@ button:active {
     transform: translateY(0);
 }
 
+/* NAVIGATION BAR CONTAINER */
 .headerContainer {
     background-color: #0c3d6d45;
     font-weight: 200;
@@ -63,14 +61,13 @@ button:active {
     width: auto;
 }
 
-/* Navigation bar styling */
+/* TOP NAVIGATION BAR */
 .navbar {
     display: flex;
     gap: 20px;
     align-items: center;
 }
 
-/* Link styling */
 .navbar a {
     text-decoration: none;
     color: #333;
@@ -82,15 +79,7 @@ button:active {
     text-decoration: underline;
 }
 
-
-.instruction {
-    font-weight: 150;
-    font-size: 12px;
-    color: #333;
-    padding: 0px;
-}
-
-
+/* SEARCH CONTAINER */
 .searchContainer {
     background-color: #d3e2f1;
     outline: 2px solid #587da1;
@@ -100,52 +89,127 @@ button:active {
     box-sizing: border-box;
 }
 
+/* SEARCH INSTRUCTIONS */
+.instruction {
+    font-weight: 150;
+    font-size: 12px;
+    color: #333;
+    padding: 0px;
+}
 
+/* RESULTS LAYOUT */
+#layoutOutput {
+    display: none;
+    gap: 20px;
 
+    width: 95%;
+    margin: 20px auto;
+    padding: 20px;
 
-/* Layout */
+    background: #ffffff;
+    border-radius: 12px;
+    border: 1px solid #d4d8e2;
+    box-shadow: 0 4px 14px rgba(0, 0, 0, 0.08);
+}
+
+/* SIDEBAR */
 #sidebar {
-    float: left;
-    width: 20%;
-    padding: 10px;
-    border-right: 1px solid #ccc;
+    width: 220px;
+    flex-shrink: 0;
+
+    background: #f6f8fc;
+    border-right: 1px solid #d4d8e2;
+    padding: 15px 10px;
+    border-radius: 8px;
 }
 
-#output {
-    margin-left: 22%;
-    padding: 10px;
+/* SIDEBAR HEAEDERS */
+#sidebar h3 {
+    margin: 0 0 12px 0;
+    font-size: 18px;
+    color: #1C2A66;
+    font-weight: 600;
 }
 
-/* Sidebar buttons */
+/* SIDEBAR BUTTONS */
 .sidebar-button {
     display: block;
     width: 100%;
-    margin-bottom: 5px;
-    padding: 6px 8px;
+
+    padding: 10px 14px;
+    margin-bottom: 6px;
+    border-radius: 6px;
+
+    border: none;
+    background: #e9ecf3;
+    color: #1C2A66;
     text-align: left;
-    background-color: #f5f5f5;
-    border: 1px solid #ccc;
+    font-size: 15px;
     cursor: pointer;
+
+    transition: transform 0.1s;
 }
 
 .sidebar-button:hover {
-    background-color: #eaeaea;
+    background: #d9dce4;
 }
 
-/* Tables */
-.result-table {
-    border-collapse: collapse;
-    width: 100%;
-    margin-top: 10px;
+.sidebar-button.active {
+    background: #1C2A66;
+    color: #ffffff;
+    font-weight: 600;
 }
 
-.result-table th, .result-table td {
-    border: 1px solid #444;
-    padding: 4px 6px;
-    font-size: 12px;
+/* RESULTS SECTION */
+#results {
+    flex: 1;
+    background: #ffffff;
+    padding: 10px 2px;
+    min-width: 0;
 }
 
-.result-table th {
-    background-color: #eee;
-    font-weight: bold;
+/* RESULTS HEADERS */
+#results h2 {
+    margin-top: 25px;
+    margin-bottom: 10px;
+    font-size: 20px;
+    color: #1C2A66;
+    font-weight: 600;
+    border-bottom: 2px solid #e5e8f0;
+    padding-bottom: 6px;
+}
+
+/* DATATABLES */
+table.dataTable {
+    font-size: 14px;
+    border-collapse: separate;
+    border-spacing: 0 2px;
+}
+
+table.dataTable thead th {
+    background: #f1f3f9;
+    padding: 10px;
+    font-weight: 600;
+    color: #1C2A66;
+    border-bottom: none;
+}
+
+table.dataTable tbody tr {
+    background: #ffffff;
+    box-shadow: 0 1px 4px rgba(0,0,0,0.06);
+}
+
+table.dataTable tbody td {
+    padding: 10px 12px;
+    border-top: none;
+}
+
+table.dataTable tbody tr:hover {
+    background: #f6f8fc;
+}
+
+.tableWrapper {
+    max-width: 95%;
+    box-sizing: border-box;
+    overflow-x: auto;
 }

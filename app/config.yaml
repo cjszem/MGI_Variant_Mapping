@@ -10,6 +10,7 @@ paths:
   mgi_alleles: "app/data/MGI/VARIANT-ALLELE-MGI.tsv"
   mgi_homology: "app/data/MGI/HOM_ProteinCoding.rpt"
   mgi_disease: "app/data/MGI/MGI_DiseaseMouseModel.rpt"
+  mgi_phenotype: "app/data/MGI/ALL_Phenotype.rpt"
   doid_map: "app/data/DOID/doid_map.json"
   mouse_gene_pqt: "app/data/Ensembl/mouse_gene_data.parquet"
   human_gene_pqt: "app/data/Ensembl/human_gene_data.parquet"
