@@ -5,15 +5,39 @@ api:
   mousemine_base_url: "https://www.mousemine.org/mousemine/service/query/results"
   ols_base_url: "https://www.ebi.ac.uk/ols4/api/"
 
+data:
+  mondo_obo: "https://purl.obolibrary.org/obo/mondo.obo"
+
+  mgi_allele: "https://fms.alliancegenome.org/download/VARIANT-ALLELE_NCBITaxon10090.tsv.gz"
+  mgi_homology: "https://www.informatics.jax.org/downloads/reports/HOM_ProteinCoding.rpt"
+  mgi_disease: "https://www.informatics.jax.org/downloads/reports/MGI_DiseaseMouseModel.rpt"
+  mgi_phenotype: "https://www.informatics.jax.org/downloads/reports/ALL_Phenotype.rpt"
+
+  clinvar_vcf: "https://ftp.ncbi.nlm.nih.gov/pub/clinvar/vcf_GRCh38/clinvar.vcf.gz"
+  clinvar_tbi: "https://ftp.ncbi.nlm.nih.gov/pub/clinvar/vcf_GRCh38/clinvar.vcf.gz.tbi"
+
+  ensembl_hum_gff3: "https://ftp.ensembl.org/pub/current_gff3/homo_sapiens/Homo_sapiens.GRCh38.115.chr.gff3.gz"
+  ensembl_mus_gff3: "https://ftp.ensembl.org/pub/current_gff3/mus_musculus/Mus_musculus.GRCm39.115.chr.gff3.gz"
+
+
 paths:
   clinvar_vcf: "app/data/NCBI/clinvar.grch38.vcf.gz"
+  clinvar_tbi: "app/data/NCBI/clinvar.grch38.vcf.gz.tbi"
+
   mgi_alleles: "app/data/MGI/VARIANT-ALLELE-MGI.tsv"
   mgi_homology: "app/data/MGI/HOM_ProteinCoding.rpt"
   mgi_disease: "app/data/MGI/MGI_DiseaseMouseModel.rpt"
   mgi_phenotype: "app/data/MGI/ALL_Phenotype.rpt"
-  doid_map: "app/data/DOID/doid_map.json"
+
+  mondo_obo: "app/data/MONDO/mondo.obo"
+  mondo_xref_map: "app/data/MONDO/mondo_xref_map.json"
+  mondo_term_map: "app/data/MONDO/mondo_term_map.json"
+
+  ensembl_hum_gff3: "app/data/Ensembl/Homo_sapiens.GRCh38.115.gff3.gz"
+  ensembl_mus_gff3: "app/data/Ensembl/Homo_sapiens.GRCh38.115.gff3.gz"
   mouse_gene_pqt: "app/data/Ensembl/mouse_gene_data.parquet"
   human_gene_pqt: "app/data/Ensembl/human_gene_data.parquet"
+
   vep_cache: "/Users/szemac/.vep"
   vep_processing: "/Users/szemac/Desktop/MGI_Variant_Mapping/app/processing/vep"
 

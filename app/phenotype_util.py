@@ -22,8 +22,8 @@ def allele_phenotype_match(allele_df):
     '''
     phenotype_df = allele_df.join(MGI_phenotype_df, on='AlleleID', how='inner')
 
-    phenotype_df.drop(['Chromosome', 'Start', 'End', 'Ref', 'Alt', 'Molecular Consequence'], inplace=True, axis=1)
+    phenotype_df.drop(['Allele Symbol', 'Chromosome', 'Start', 'End', 'Ref', 'Alt', 'Molecular Consequence'], inplace=True, axis=1)
 
-    phenotype_df['Phenotypes'] = (phenotype_df['Phenotypes'].replace(',', '-').fillna('').str.split('|'))
+    phenotype_df['Phenotypes'] = (phenotype_df['Phenotypes'].str.split('|'))
 
     return phenotype_df

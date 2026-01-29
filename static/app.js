@@ -150,7 +150,7 @@ function jsonToHTMLTable(data, tableId) {
 
     const columns = Object.keys(data[0]);
 
-    let html = `<table id="${tableId}" class="datatable">`;
+    let html = `<table id="${tableId}" class="table.dataTable">`;
     html += "<thead><tr>";
 
     columns.forEach(col => {

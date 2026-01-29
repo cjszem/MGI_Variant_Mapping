@@ -1,32 +1,34 @@
 import json
+import yaml
 import obonet
+import requests
 import pandas as pd
 
 
-def parse_doid_obo(doid_path):
+# Load Config
+with open('app/config.yaml') as f:
+    config = yaml.safe_load(f)
+
+
+def download_file(input_url, output_path):
     '''
-    Parses the DOID OBO file to create a mapping of disease synonyms to their primary names.
-    Creates a JSON file 'doid_map.json' in the 'data/DOID/' directory.
+    Downloads a file to a given location from a url.
 
-    Parameters:
-        doid_path. str. Path to doid file parse.
+    Paramters:
+        input_url: str. URL to request from.
+        output_path: str. File to save URL to.
     '''
-    graph = obonet.read_obo(doid_path)
+    try:
+        with requests.get(input_url, stream=True) as r:
+            r.raise_for_status()
+            with open(output_path, 'wb') as f:
+                for chunk in r.iter_content(chunk_size=8192):
+                    if chunk:
+                        f.write(chunk)
+        print(f"Downloaded '{output_path}' successfully.")
 
-    synonym_to_name = {}
-    for doid, data in graph.nodes(data=True):
-        name = data.get('name').lower()
-
-        for syn in data.get('synonym', []):
-            # Synonym strings look like: '"--------" EXACT []'
-            # Extract the quoted text:
-            parts = syn.split('"')
-
-            if len(parts) >= 3:
-                syn_text = parts[1].strip().lower()
-                synonym_to_name[syn_text] = name
-
-    json.dump(synonym_to_name, open('data/DOID/doid_map.json', 'w'), indent=4)
+    except requests.exceptions.RequestException as e:
+        print(f"Download failed: {e}")
 
 
 def parse_mondo_obo(mondo_path):
@@ -53,8 +55,8 @@ def parse_mondo_obo(mondo_path):
             x_ref = x_id.split(' ')[0]
             mondo_xref_map[x_ref] = id
 
-    json.dump(mondo_term_map, open('data/MONDO/mondo_term_map.json', 'w'), indent=4)
-    json.dump(mondo_xref_map, open('data/MONDO/mondo_xref_map.json', 'w'), indent=4)
+    json.dump(mondo_term_map, open(config['paths']['mondo_term_map'], 'w'), indent=4)
+    json.dump(mondo_xref_map, open(config['paths']['mondo_xref_map'], 'w'), indent=4)
 
 
 def parse_ensembl_gff3(gff3_path, species):
@@ -78,5 +80,5 @@ def parse_ensembl_gff3(gff3_path, species):
     # Keep only needed columns
     gene_df = gene_df[['Name', 'description', 'biotype', 'seqid', 'start', 'end', 'strand', 'gene_id']]
 
-    gene_df.to_parquet(f'data/Ensembl/{species}_gene_data.parquet')
+    gene_df.to_parquet(config['paths'][f'{species}_gene_pqt'])
 

@@ -26,35 +26,40 @@
 
     Description: MGI disease models.
 
+    Source: https://www.informatics.jax.org/downloads/reports/MGI_DiseaseMouseModel.rpt
+
     Usage: Associates mouse models with disease phenotypes.
 
-4. data/MGI/MGI_PhenotypicAllele.rpt
+4. data/MGI/ALL_Phenotype.rpt
 
     Description: MGI alleles and phenotype information.
+
+    Source: https://www.informatics.jax.org/downloads/reports/ALL_Phenotype.rpt
     
     Usage: Provides allele type and phenotype annotations.
 
 
-## Disease Ontology (DOID)
+## Disease Ontology
 
-1. data/DOID/doid.obo
-
-    Description: DOID ontology file containing disease terms and hierarchy.
-
-    Source: https://raw.githubusercontent.com/DiseaseOntology/HumanDiseaseOntology/main/src/ontology/doid.obo
-
-2. data/DOID/doid_map.json
-
-    Description: DOID synonyms mapped to disease names.
-
-    Created by: ```data_util.parse_doid_obo(doid_path)```
-
-    Usage: Enables synonym resolution for disease terms.
-
-3. data/DOID/mondo.obo
+1. data/MONDO/mondo.obo
 
     Source: https://purl.obolibrary.org/obo/mondo.obo
     
+2. data/MONDO/mondo_xref_map.json
+
+    Description: MONDO xref IDs mapped to MONDO IDs.
+
+    Created by: ```data_util.parse_mondo_obo(mondo_path)```
+
+    Usage: Enables synonym resolution for disease terms.
+
+3. data/MONDO/mondo_term_map.json
+
+    Description: MONDO IDs mapped to MONDO terms.
+
+    Created by: ```data_util.parse_mondo_obo(mondo_path)```
+
+    Usage: Enables synonym resolution for disease terms.
 
 
 ## Ensembl Gene Data
@@ -79,6 +84,8 @@
 1. data/NCBI/clinvar.grch38.vcf.gz
 
     Description: ClinVar entries for GRCh38 variants.
+
+    Source: https://ftp.ncbi.nlm.nih.gov/pub/clinvar/vcf_GRCh38/clinvar.vcf.gz
 
     Usage: Provides clinically relevant human variants for mapping.
 

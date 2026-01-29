@@ -22,11 +22,8 @@ MGI_disease_df = pd.read_csv(config['paths']['mgi_disease'],
                                     'AlleleRRID', 'MarkerSymbol', 'MarkerMGIid', 'GeneRepositoryID', ''])
 
 
-mondo_xref_map = json.load(open('app/data/MONDO/mondo_xref_map.json'))
-mondo_term_map = json.load(open('app/data/MONDO/mondo_term_map.json'))
-
-
-disease_mapping = json.load(open(config['paths']['doid_map']))
+mondo_xref_map = json.load(open(config['paths']['mondo_xref_map']))
+mondo_term_map = json.load(open(config['paths']['mondo_term_map']))
 
 
 def get_clinvar_ids(gene, start):
@@ -114,8 +111,8 @@ def get_disease_associations(clinvar_id):
             disease = condition.text
 
             # Get submission count
-            germline_description = rcv.find(".//Description") 
-            submissions = germline_description.get("SubmissionCount")
+            # germline_description = rcv.find(".//Description") 
+            # submissions = germline_description.get("SubmissionCount")
 
             diseases.append(disease)
     
