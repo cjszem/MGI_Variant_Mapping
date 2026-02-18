@@ -113,7 +113,7 @@ function renderTables(input, gene) {
     });
 
     $('#humVariantTable').DataTable({
-        columnDefs: [{ targets: [0, 1, 13, 14, 17], visible: false }], // Hide input, submission, refAA, varAA, and MondoSet
+        columnDefs: [{ targets: [0, 1, 13, 14], visible: false }], // Hide input, submission, refAA, and varAA
         dom: 't',
         pageLength: 20,
     });
@@ -125,7 +125,7 @@ function renderTables(input, gene) {
     });
 
     $('#musModelTable').DataTable({
-        columnDefs: [{ targets: [11, 12, 15], visible: false }], // Hide refAA, varAA, and MondoSet
+        columnDefs: [{ targets: [11, 12], visible: false }], // Hide refAA and varAA
         dom: 'tp',
         pageLength: 20,
     });
@@ -162,7 +162,18 @@ function jsonToHTMLTable(data, tableId) {
     data.forEach(row => {
         html += "<tr>";
         columns.forEach(col => {
-            html += `<td>${row[col] !== undefined ? row[col] : ""}</td>`;
+            let value = row[col] !== undefined ? row[col] : "";
+
+            // 🔽 Special handling for the Phenotypes column
+            if (col === "Phenotypes" && Array.isArray(value)) {
+                value = value
+                    .map(v => String(v).trim())
+                    .filter(v => v.length)
+                    .join("<br>");
+
+            }
+
+            html += `<td>${value}</td>`;
         });
         html += "</tr>";
     });

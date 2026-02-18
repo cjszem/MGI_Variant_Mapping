@@ -267,24 +267,24 @@ def prepare_vep_output(vep_df):
     vep_df['consequence_terms'] = vep_df['consequence_terms'].apply(lambda x: ','.join(x) if isinstance(x, list) else x)
 
 
-    # Fetch domain names
-    for domain in vep_df['Domain'].unique():
-        if domain == None:
-            dom_name = None
-        else:
-            dom_name = get_domain_name(domain)
-        vep_df.loc[vep_df['Domain'] == domain, 'domain_name'] = dom_name
+    # # Fetch domain names
+    # for domain in vep_df['Domain'].unique():
+    #     if domain == None:
+    #         dom_name = None
+    #     else:
+    #         dom_name = get_domain_name(domain)
+    #     vep_df.loc[vep_df['Domain'] == domain, 'domain_name'] = dom_name
 
     
     # Create protein DataFrame
-    keep = ['Input', 'Submission', 'gene_symbol', 'transcript_id', 'HGVS', 'biotype', 'exon', 'Domain', 'domain_name', 'polyphen_prediction', 
+    keep = ['Input', 'Submission', 'gene_symbol', 'transcript_id', 'HGVS', 'biotype', 'exon', 'Domain', 'polyphen_prediction', 
             'polyphen_score', 'consequence_terms', 'codons', 'amino_acids', 'refAA', 'varAA']
     cols_present = [col for col in keep if col in vep_df.columns]
     protein_df = vep_df[cols_present].copy()
 
     # Update column names
     protein_df.rename(columns={'transcript_id': 'Transcript ID', 'gene_symbol': 'Gene Symbol', 'biotype': 'Biotype', 
-                       'exon': 'Exon Rank', 'Domain': 'Pfam Domain ID', 'domain_name': 'Pfam Domain Name', 
+                       'exon': 'Exon Rank', 'Domain': 'Pfam Domain ID', 
                        'polyphen_prediction': 'Polyphen Prediction', 'polyphen_score': 'Polyphen Score', 
                        'consequence_terms': 'Molecular Consequence', 'codons': 'Codon Switch', 'amino_acids': 'Amino Acids'}, 
                        inplace=True,  errors='ignore')
@@ -423,6 +423,8 @@ def run_vep(variants, species):
     docker_vep(species)
     
     vep_df = parse_vep_json()
+
+    vep_df.to_csv('app/testing_results/vep.csv', index=False)
 
     return vep_df
 

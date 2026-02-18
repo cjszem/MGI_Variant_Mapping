@@ -178,7 +178,7 @@ def batch_mvar(input_mapping_df, assembly='GRCm39'):
 
     # Rearrange columns
     mouse_prt_df = mouse_prt_df[['Gene Symbol', 'AlleleID', 'AlleleSymbol', 'Transcript ID', 'Biotype', 
-                                 'Exon Rank', 'Pfam Domain ID', 'Pfam Domain Name', 'Molecular Consequence', 
+                                 'Exon Rank', 'Pfam Domain ID', 'Molecular Consequence', 
                                  'Codon Switch', 'Amino Acids', 'refAA', 'varAA', 'Associated Diseases', 'MONDO']]
     
 
