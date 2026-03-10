@@ -19,7 +19,6 @@ human_gene_pqt = pd.read_parquet(config['paths']['human_gene_pqt'])
 homology_df = pd.read_csv(config['paths']['mgi_homology'],
                           sep='\t', names=['MGI_ID', 'MusGeneSymbol', 'MusEntrezGeneID', 
                                            'Mus_HGNC_ID', 'HumGeneSymbol', 'HumEntrezGeneID'])
-homology_dict = dict(zip(homology_df['HumGeneSymbol'], homology_df['MusGeneSymbol']))
 
 # Load Mus alleles
 mus_alleles_df = pd.read_csv(config['paths']['mgi_alleles'], sep='\t')
@@ -111,12 +110,18 @@ def fetch_gene_info(genes, species='human'):
     return subset
 
 
-def fetch_homologous_gene(input_mapping_df):
+def fetch_homologous_gene(input_mapping_df, species):
     '''
     '''
-    input_mapping_df = homology_df.merge(input_mapping_df, left_on='HumGeneSymbol', right_on='Hum Gene', how='inner')\
-                                  .rename(columns={'MusGeneSymbol': 'Mus Gene'}).copy()
-    input_mapping_df.drop(['HumGeneSymbol', 'Mus_HGNC_ID', 'HumEntrezGeneID', 'MusEntrezGeneID'], axis=1, inplace=True)
+    if species == 'human':
+        input_mapping_df = homology_df.merge(input_mapping_df, left_on='HumGeneSymbol', right_on='Hum Gene', how='inner')\
+                                    .rename(columns={'MusGeneSymbol': 'Mus Gene'}).copy()
+        input_mapping_df.drop(['HumGeneSymbol', 'Mus_HGNC_ID', 'HumEntrezGeneID', 'MusEntrezGeneID'], axis=1, inplace=True)
+
+    elif species == 'mouse':
+        input_mapping_df = homology_df.merge(input_mapping_df, left_on='HumGeneSymbol', right_on='Mus Gene', how='inner')\
+                                    .rename(columns={'HumGeneSymbol': 'Hum Gene'}).copy()
+        input_mapping_df.drop(['MusGeneSymbol', 'Mus_HGNC_ID', 'HumEntrezGeneID', 'MusEntrezGeneID'], axis=1, inplace=True)
 
     return input_mapping_df
 

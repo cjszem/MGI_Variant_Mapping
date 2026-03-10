@@ -9,6 +9,14 @@ with open('app/config.yaml') as f:
 
 clinvar_vcf = VCF(config['paths']['clinvar_vcf'])
 
+variant_summary_grch38 = pd.read_csv(config['paths']['ncbi_var_summary_grch38'], sep='\t')
+
+amino_acid_map = pd.read_csv(config['paths']['amino_acids'])
+
+
+print(variant_summary_grch38.columns)
+
+print(variant_summary_grch38.head())
 
 def process_batch_query(input):
     '''
@@ -66,4 +74,20 @@ def prepare_input(variants):
 
 def process_human_fetch(mouse_protein_df):
 
-    print(next(clinvar_vcf))
+    # NEED TO MAKE WORK FOR MULT ROWS
+
+    genes = mouse_protein_df['Gene Symbol'][1]
+
+    refAA = mouse_protein_df['refAA'][1]
+    mult_refAA = amino_acid_map[amino_acid_map['Single Letter Code'] == refAA]['Multiple Letter Code']
+    
+    varAA = mouse_protein_df['varAA'][1]
+    mult_varAA = amino_acid_map[amino_acid_map['Single Letter Code'] == varAA]['Multiple Letter Code']
+
+    posAA = mouse_protein_df['protein_start'][1]
+
+    p_long = 'p.' + mult_refAA + str(posAA) + mult_varAA
+
+    homologous_variants = variant_summary_grch38[variant_summary_grch38['GeneSymbol'].isin(genes) & variant_summary_grch38['Name'].str.contains(p_long)]
+
+    return homologous_variants

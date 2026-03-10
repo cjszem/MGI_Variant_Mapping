@@ -120,7 +120,7 @@ def mvar_fetch(input_mapping_df, assembly='GRCm39'):
     
 
     # Extract Mus gene symbol
-    gene_input_df = fetch_homologous_gene(input_mapping_df)
+    gene_input_df = fetch_homologous_gene(input_mapping_df, 'mouse')
 
     # Build orthologous gene table
     genes = gene_input_df['Mus Gene'].unique()
@@ -218,11 +218,11 @@ def score(hum_prt_df, mouse_prt_df, gene_inputs):
         pandas.DataFrame. contains score information for each variant-model pair.
     '''
     s = time.time()
-    hum_prt['MONDO_set'] = hum_prt['MONDO'].apply(set)
-    mouse_prt['MONDO_set'] = mouse_prt['MONDO'].apply(set)
+    hum_prt_df['MONDO_set'] = hum_prt_df['MONDO'].apply(set)
+    mouse_prt_df['MONDO_set'] = mouse_prt_df['MONDO'].apply(set)
 
-    expanded_df = gene_inputs.merge(hum_prt, on='Input', suffixes=('', '_human'))
-    expanded_df = expanded_df.merge(mouse_prt, left_on='Mus Gene', right_on='Gene Symbol', suffixes=('_human', '_mouse'))
+    expanded_df = gene_inputs.merge(hum_prt_df, on='Input', suffixes=('', '_human'))
+    expanded_df = expanded_df.merge(mouse_prt_df, left_on='Mus Gene', right_on='Gene Symbol', suffixes=('_human', '_mouse'))
 
     score_df = pd.DataFrame()
     score_df['Input'] = expanded_df['Input']
@@ -298,7 +298,7 @@ def mvar_query(variants, assembly='GRCm39'):
 
     return gene_df, protein_df, input_gene_df
 
-def hvar_fetch(mouse_prt_df, assembly='GRCh38'):
+def hvar_fetch(mouse_prt_df, input_mapping_df, assembly='GRCh38'):
     ''''''
     # Check assembly
     if assembly != 'GRCh38':
@@ -306,4 +306,11 @@ def hvar_fetch(mouse_prt_df, assembly='GRCh38'):
         raise ValueError('Assembly must be GRCh38')
     
 
-    process_human_fetch(mouse_prt_df)
+    # Extract Hum gene symbol
+    gene_input_df = fetch_homologous_gene(input_mapping_df, 'human')
+
+    # Build orthologous gene table
+    genes = gene_input_df['Hum Gene'].unique()
+    mus_gene_df = fetch_gene_info(genes, species='human')
+
+

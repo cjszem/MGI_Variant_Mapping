@@ -28,7 +28,7 @@ def download_file(input_url, output_path):
         print(f"Downloaded '{output_path}' successfully.")
 
     except requests.exceptions.RequestException as e:
-        print(f"Download failed: {e}")
+        print(f'Download failed: {e}')
 
 
 def parse_mondo_obo(mondo_path):
@@ -82,3 +82,18 @@ def parse_ensembl_gff3(gff3_path, species):
 
     gene_df.to_parquet(config['paths'][f'{species}_gene_pqt'])
 
+
+def parse_ncbi_variant_summary(summary_path, output_path):
+    '''
+    '''
+    cols = ['#AlleleID', 'Type', 'Name', 'GeneSymbol', 'HGNC_ID', 
+        'ClinSigSimple', 'PhenotypeIDS', 'PhenotypeList', 
+        'Assembly', 'Chromosome', 'Start', 'Stop', 
+        'ReferenceAllele', 'AlternateAllele']
+
+    var = pd.read_csv(summary_path, sep='\t', usecols=cols)
+
+    var.rename(columns={'#AlleleID': 'AlleleID'}, inplace=True)
+
+    var_grch38 = var[var['Assembly'] == 'GRCh38']
+    var_grch38.to_csv(output_path, sep='\t', index=False)

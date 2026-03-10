@@ -278,7 +278,7 @@ def prepare_vep_output(vep_df):
     
     # Create protein DataFrame
     keep = ['Input', 'Submission', 'gene_symbol', 'transcript_id', 'HGVS', 'biotype', 'exon', 'Domain', 'polyphen_prediction', 
-            'polyphen_score', 'consequence_terms', 'codons', 'amino_acids', 'refAA', 'varAA']
+            'polyphen_score', 'consequence_terms', 'codons', 'amino_acids', 'refAA', 'protein_start', 'varAA']
     cols_present = [col for col in keep if col in vep_df.columns]
     protein_df = vep_df[cols_present].copy()
 
@@ -350,7 +350,8 @@ def docker_vep(species, query=True, input_file='input.vcf', output_file='output.
                 'mane_select,length']
     
     if species == 'mus_musculus' and query:
-        cmd += ['--pick', '--pick_order', 'canonical,length']
+        cmd += ['--pick', '--coding_only',
+                '--pick_order', 'canonical,length']
 
     subprocess.run(cmd, check=True)
 

@@ -1,5 +1,5 @@
 import yaml
-from data_util import download_file, parse_mondo_obo, parse_ensembl_gff3
+from data_util import download_file, parse_mondo_obo, parse_ensembl_gff3, parse_ncbi_variant_summary
 
 
 # Load Config
@@ -44,6 +44,18 @@ def refresh_ensembl():
     parse_ensembl_gff3(out_hum, 'human')
     parse_ensembl_gff3(out_mus, 'mouse')
 
+
+def refresh_ncbi():
+    url = config['data']['ncbi_var_summary']
+    output_path = config['paths']['ncbi_var_summary']
+
+    download_file(url, output_path)
+
+    input_path = config['paths']['ncbi_var_summary']
+    output_path = config['paths']['ncbi_var_summary_grch38']
+
+    parse_ncbi_variant_summary(input_path, output_path)
+    
 
 def refresh_data():
     refresh_mondo()

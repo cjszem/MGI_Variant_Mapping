@@ -16,13 +16,20 @@ data:
   clinvar_vcf: "https://ftp.ncbi.nlm.nih.gov/pub/clinvar/vcf_GRCh38/clinvar.vcf.gz"
   clinvar_tbi: "https://ftp.ncbi.nlm.nih.gov/pub/clinvar/vcf_GRCh38/clinvar.vcf.gz.tbi"
 
+  ncbi_var_summary: "https://ftp.ncbi.nlm.nih.gov/pub/clinvar/tab_delimited/variant_summary.txt.gz"
+
   ensembl_hum_gff3: "https://ftp.ensembl.org/pub/current_gff3/homo_sapiens/Homo_sapiens.GRCh38.115.chr.gff3.gz"
   ensembl_mus_gff3: "https://ftp.ensembl.org/pub/current_gff3/mus_musculus/Mus_musculus.GRCm39.115.chr.gff3.gz"
 
 
 paths:
+  amino_acids: "app/data/amino_acid_mapping.csv"
+
   clinvar_vcf: "app/data/NCBI/clinvar.grch38.vcf.gz"
   clinvar_tbi: "app/data/NCBI/clinvar.grch38.vcf.gz.tbi"
+
+  ncbi_var_summary: "app/data/NCBI/variant_summary.tsv.gz"
+  ncbi_var_summary_grch38: "app/data/NCBI/variant_summary_grch38.tsv"
 
   mgi_alleles: "app/data/MGI/VARIANT-ALLELE-MGI.tsv"
   mgi_homology: "app/data/MGI/HOM_ProteinCoding.rpt"
