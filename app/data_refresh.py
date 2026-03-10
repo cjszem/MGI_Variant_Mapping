@@ -41,6 +41,9 @@ def refresh_ensembl():
     download_file(url_hum, out_hum)
     download_file(url_mus, out_mus)
 
+    parse_ensembl_gff3(out_hum, 'human')
+    parse_ensembl_gff3(out_mus, 'mouse')
+
 
 def refresh_data():
     refresh_mondo()

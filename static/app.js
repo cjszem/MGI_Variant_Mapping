@@ -113,7 +113,7 @@ function renderTables(input, gene) {
     });
 
     $('#humVariantTable').DataTable({
-        columnDefs: [{ targets: [0, 1, 13, 14], visible: false }], // Hide input, submission, refAA, and varAA
+        columnDefs: [{ targets: [0, 1, 2, 12, 13, 16], visible: false }], // Hide input, submission, gene, refAA, varAA, and MONDO_set
         dom: 't',
         pageLength: 20,
     });
@@ -125,7 +125,7 @@ function renderTables(input, gene) {
     });
 
     $('#musModelTable').DataTable({
-        columnDefs: [{ targets: [11, 12], visible: false }], // Hide refAA and varAA
+        columnDefs: [{ targets: [0, 10, 11, 14], visible: false }], // Hide gene, refAA, varAA, and MONDO_set
         dom: 'tp',
         pageLength: 20,
     });
@@ -146,39 +146,49 @@ function renderTables(input, gene) {
 
 // Turn an array of objects into an HTML table
 function jsonToHTMLTable(data, tableId) {
-    if (!data || data.length === 0) return "<p>No data</p>";
+    if (!data || data.length === 0) return `<p>No data</p>`;
 
     const columns = Object.keys(data[0]);
 
     let html = `<table id="${tableId}" class="table.dataTable">`;
-    html += "<thead><tr>";
+    html += `<thead><tr>`;
 
     columns.forEach(col => {
         html += `<th>${col}</th>`;
     });
 
-    html += "</tr></thead><tbody>";
+    html += `</tr></thead><tbody>`;
 
     data.forEach(row => {
-        html += "<tr>";
+        html += `<tr>`;
         columns.forEach(col => {
-            let value = row[col] !== undefined ? row[col] : "";
+            let value = row[col] !== undefined ? row[col] : '';
 
-            // 🔽 Special handling for the Phenotypes column
-            if (col === "Phenotypes" && Array.isArray(value)) {
+            // Seperate Phenotypes into multiple lines
+            if (col === 'Phenotypes' && Array.isArray(value)) {
                 value = value
                     .map(v => String(v).trim())
                     .filter(v => v.length)
-                    .join("<br>");
+                    .join(`<br>`);
 
+            }
+
+            // Add linking for alleles
+            if (col === 'AlleleID') {
+                value = `<a href="https://www.informatics.jax.org/allele/${value}" target="_blank" rel="noopener noreferrer">${value}</a>`;
+            }
+
+            // Add linking for PFAM domains
+            if (col === 'Pfam Domain ID' && value) {
+                value = `<a href="https://www.ebi.ac.uk/interpro/entry/pfam/${value}" target="_blank" rel="noopener noreferrer">${value}</a>`;
             }
 
             html += `<td>${value}</td>`;
         });
-        html += "</tr>";
+        html += `</tr>`;
     });
 
-    html += "</tbody></table>";
+    html += `</tbody></table>`;
 
     return html;
 }

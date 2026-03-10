@@ -1,5 +1,13 @@
 import re
+import yaml
 import pandas as pd
+from cyvcf2 import VCF
+
+# Load Config
+with open('app/config.yaml') as f:
+    config = yaml.safe_load(f)
+
+clinvar_vcf = VCF(config['paths']['clinvar_vcf'])
 
 
 def process_batch_query(input):
@@ -55,3 +63,7 @@ def prepare_input(variants):
 
     return variants, submission_map
 
+
+def process_human_fetch(mouse_protein_df):
+
+    print(next(clinvar_vcf))

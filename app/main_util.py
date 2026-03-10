@@ -2,12 +2,11 @@ import yaml
 import logging
 import pandas as pd
 from app.log_util import log_batch_query
-from app.processing_util import prepare_input
+from app.processing_util import prepare_input, process_human_fetch
 from app.vep_util import prepare_vep_output, run_vep
 from app.phenotype_util import allele_phenotype_match
 from app.gene_util import fetch_gene_info, fetch_mus_alleles, fetch_homologous_gene, process_mus_alleles
 from app.disease_util import assign_clinvar, fetch_mus_doid, clndisdb_to_mondo, map_doids_to_mondo
-
 import time
 
 # Load config
@@ -23,8 +22,8 @@ homology_dict = dict(zip(homology_df['HumGeneSymbol'], homology_df['MusGeneSymbo
 
 
 
-# ---- Batch ----
-def batch_hvar(variants, assembly='GRCh38'):
+# ---- HUMAN QUERY ----
+def hvar_query(variants, assembly='GRCh38'):
     '''
     Annotate a batch of human variant using local gene metadata, Ensembl VEP, and ClinVar.
 
@@ -49,7 +48,7 @@ def batch_hvar(variants, assembly='GRCh38'):
 
 
     # Query VEP
-    vep_df = run_vep(variants, 'homo_sapiens')
+    vep_df = run_vep(variants, 'homo_sapiens', query=True)
 
 
     # Assign input field
@@ -93,7 +92,7 @@ def batch_hvar(variants, assembly='GRCh38'):
     return gene_df, protein_df, input_gene_df
 
 
-def batch_mvar(input_mapping_df, assembly='GRCm39'):
+def mvar_fetch(input_mapping_df, assembly='GRCm39'):
     '''
     Annotate a mouse variant using local gene metadata, Ensembl VEP, and MouseMine.
 
@@ -151,7 +150,7 @@ def batch_mvar(input_mapping_df, assembly='GRCm39'):
 
 
     # Query VEP for each variant
-    variant_vep = run_vep(mouse_prt_df, 'mus_musculus')
+    variant_vep = run_vep(mouse_prt_df, 'mus_musculus', query=False)
 
     # Clean VEP output
     mouse_prt_df = prepare_vep_output(variant_vep)
@@ -206,7 +205,7 @@ def batch_mvar(input_mapping_df, assembly='GRCm39'):
     return mus_gene_df, mouse_prt_df, phenotype_df, gene_input_df
 
 
-def batch_score(hum_prt, mouse_prt, gene_inputs):
+def score(hum_prt_df, mouse_prt_df, gene_inputs):
     '''
     Creates score DF for human and mouse results.
 
@@ -227,7 +226,7 @@ def batch_score(hum_prt, mouse_prt, gene_inputs):
 
     score_df = pd.DataFrame()
     score_df['Input'] = expanded_df['Input']
-    score_df['Allele ID'] = expanded_df['AlleleID']
+    score_df['AlleleID'] = expanded_df['AlleleID']
     score_df['Allele Symbol'] = expanded_df['AlleleSymbol']
     score_df['Transcript ID'] = expanded_df['Transcript ID_mouse']
     score_df['Biotype Match'] = expanded_df['Biotype_human'] == expanded_df['Biotype_mouse']
@@ -251,3 +250,60 @@ def batch_score(hum_prt, mouse_prt, gene_inputs):
     print(f'Score Time: {e-s}')
 
     return score_df
+
+
+# ---- MOUSE QUERY ----
+def mvar_query(variants, assembly='GRCm39'):
+    '''
+    '''
+    # Check assembly
+    if assembly != 'GRCm39':
+        raise ValueError('Assembly must be GRCm39')
+    
+    # Log the query
+    log_batch_query(variants)
+    
+    # Prepare HGVS notation
+    variants, submission_map = prepare_input(variants)
+
+
+    # Query VEP
+    vep_df = run_vep(variants, 'mus_musculus', query=True)
+
+
+    # Assign input field
+    vep_df['Input'] = vep_df['Submission'].map(submission_map)
+
+    vep_df.to_csv('app/testing_results/vep_output.csv', index=False)
+
+    # Clean VEP output into protein DataFrame
+    protein_df = prepare_vep_output(vep_df)
+
+    print(protein_df)
+
+
+    # Create a gene to input mapping DataFrame
+    input_gene_df = (protein_df[['Input', 'Gene Symbol']].drop_duplicates()
+                     .rename(columns={'Gene Symbol': 'Mus Gene'}).copy())
+
+    # Build gene table
+    genes = protein_df['Gene Symbol'].unique()
+    gene_df = fetch_gene_info(genes, species='mouse')
+
+    
+
+    gene_df.to_csv('app/results/mouse_gene_df.csv', index=False)
+    protein_df.to_csv('app/results/mouse_protein_df.csv', index=False)
+
+
+    return gene_df, protein_df, input_gene_df
+
+def hvar_fetch(mouse_prt_df, assembly='GRCh38'):
+    ''''''
+    # Check assembly
+    if assembly != 'GRCh38':
+        logging.info(f'Assembly Error: {assembly} is not supported. Only GRCh38 is supported.')
+        raise ValueError('Assembly must be GRCh38')
+    
+
+    process_human_fetch(mouse_prt_df)

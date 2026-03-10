@@ -318,7 +318,7 @@ def docker_input(variants):
                     f'{row['Ref']}\t'
                     f'{row['Alt']}\n')
 
-def docker_vep(species, input_file='input.vcf', output_file='output.json'):
+def docker_vep(species, query=True, input_file='input.vcf', output_file='output.json'):
     '''
     Runs local VEP on input file for species.
 
@@ -344,10 +344,13 @@ def docker_vep(species, input_file='input.vcf', output_file='output.json'):
            '--symbol',
            '--numbers']
     
-    if species == 'homo_sapiens':
+    if species == 'homo_sapiens' and query:
         cmd += ['--polyphen', 'b',
-                '--pick',
-                '--pick_order', 'mane_select,length']
+                '--pick', '--pick_order', 
+                'mane_select,length']
+    
+    if species == 'mus_musculus' and query:
+        cmd += ['--pick', '--pick_order', 'canonical,length']
 
     subprocess.run(cmd, check=True)
 
@@ -406,7 +409,7 @@ def parse_vep_json(input_file='app/processing/vep/output.json'):
 
     return vep_df
 
-def run_vep(variants, species):
+def run_vep(variants, species, query=True):
     '''
     Runs VEP using help functions.
 
@@ -420,7 +423,7 @@ def run_vep(variants, species):
 
     docker_input(variants)
 
-    docker_vep(species)
+    docker_vep(species, query=query)
     
     vep_df = parse_vep_json()
 
