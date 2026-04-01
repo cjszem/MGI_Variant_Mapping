@@ -1,11 +1,13 @@
 // Run variant-model mapping for submitted variants on click.
 document.getElementById('runButton').addEventListener('click', function () {
-    const text = document.getElementById('variantInput').value;
+    const vars = document.getElementById('variantInput').value;
+    const org = document.getElementById('queryOrganism').value;
+
 
     fetch('http://localhost:8000/run_variants', {
         method: 'POST',
         headers: {'Content-Type': 'application/json'},
-        body: JSON.stringify({ input: text })
+        body: JSON.stringify({ variants: vars, organism: org})
     })
     .then(res => res.json())
     .then(data => {
@@ -24,19 +26,19 @@ function buildSidebar(data) {
     const sidebar = document.getElementById('sidebar');
 
     // Create sidebar header
-    sidebar.innerHTML = '<h3>Inputs:</h3>';
+    sidebar.innerHTML = '<h3>Variant Inputs:</h3>';
 
     // Handle no results
-    if (!data.human_genes || data.human_genes.length === 0) {
+    if (!data.query_proteins || data.query_proteins.length === 0) {
         sidebar.innerHTML += '<h2>No inputs found.</h2>';
         return;
     }
 
     // Create sidebar buttons
-    data.human_proteins.forEach((row, idx) => {
+    data.query_proteins.forEach((row, idx) => {
         const btn = document.createElement('button');
         btn.className = 'sidebar-button';
-        btn.textContent = row['Input'];
+        btn.textContent = row['Name'];
         btn.onclick = () => {
             // deactivate all other buttons
             document.querySelectorAll('#sidebar .sidebar-button')
@@ -46,7 +48,7 @@ function buildSidebar(data) {
             btn.classList.add('active')
 
             // render output tables
-            renderTables(row['Input'], row['Gene Symbol']); 
+            renderTables(row['Name'], row['Gene Symbol']); 
         }
         sidebar.appendChild(btn);
     });
@@ -57,39 +59,56 @@ function buildSidebar(data) {
 
 
 // Render all tables for the selected input
-function renderTables(input, gene) {
+function renderTables(name, gene) {
+    const org = document.getElementById('queryOrganism').value;
+
+    // Define organism header identifiers
+    if (org === 'human') {
+        queryOrganism = 'Human';
+        queryShort = 'Hum';
+        targetOrganism = 'Mouse';
+        targetShort = 'Mus';
+    } else if (org === "mouse") {
+        queryOrganism = 'Mouse';
+        queryShort = 'Mus';
+        targetOrganism = 'Human';
+        targetShort = 'Hum';
+    }
+
 
     // Extract homolog
-    homolog = window.fullJSON.gene_mapping.find(r => r['Hum Gene'] === gene)?.['Mus Gene']
+    homolog = window.fullJSON.gene_mapping.find(r => r[`${queryShort} Gene`] === gene)?.[`${targetShort} Gene`]
+
 
     // Extract relevant tables
-    const humGenes = window.fullJSON.human_genes.filter(row => row['Gene Symbol'] === gene);
-    const humProteins = window.fullJSON.human_proteins.filter(row => row['Input'] === input);
-    const mouseGenes = window.fullJSON.mouse_genes.filter(row => row['Gene Symbol'] === homolog);
-    const mouseProteins = window.fullJSON.mouse_proteins.filter(row => row['Gene Symbol'] === homolog);
-    const scores = window.fullJSON.scores.filter(row => row['Input'] === input);
+    const queryGenes = window.fullJSON.query_genes.filter(row => row['Gene Symbol'] === gene);
+    const queryProteins = window.fullJSON.query_proteins.filter(row => row['Name'] === name);
+    const outputGenes = window.fullJSON.output_genes.filter(row => row['Gene Symbol'] === homolog);
+    const outputProteins = window.fullJSON.output_proteins.filter(row => row['Gene Symbol'] === homolog);
+    const scores = window.fullJSON.scores.filter(row => row['Name'] === name);
     const phenotypes = window.fullJSON.phenotypes.filter(row => row['Gene Symbol'] === homolog);
+
 
     // Create HTML tables
     results.innerHTML = `
         <div class='tableWrapper'>
-            <h2>Human Gene</h2>
-            ${jsonToHTMLTable(humGenes, "humGenesTable")}
+            <h2>${queryOrganism} Gene</h2>
+            ${jsonToHTMLTable(queryGenes, "queryGenesTable")}
         </div>
 
         <div class='tableWrapper'>
-            <h2>Human Variant</h2>
-            ${jsonToHTMLTable(humProteins, "humVariantTable")}
+            <h2>${queryOrganism} Variant</h2>
+            ${jsonToHTMLTable(queryProteins, "queryVariantTable")}
         </div>
 
         <div class='tableWrapper'>
-            <h2>Mouse Homolog</h2>
-            ${jsonToHTMLTable(mouseGenes, "musGenesTable")}
+            <h2>${targetOrganism} Homologs</h2>
+            ${jsonToHTMLTable(outputGenes, "outputGenesTable")}
         </div>
 
         <div class='tableWrapper'>
-            <h2>Mouse Models</h2>
-            ${jsonToHTMLTable(mouseProteins, "musModelTable")}
+            <h2>${targetOrganism} Variants</h2>
+            ${jsonToHTMLTable(outputProteins, "outputVariantTable")}
         </div>
 
         <div class='tableWrapper'>
@@ -99,48 +118,116 @@ function renderTables(input, gene) {
 
 
         <div class='tableWrapper'>
-            <h2>Mouse Allele Phenotypes</h2>
+            <h2>${targetOrganism} Phenotypes</h2>
             ${jsonToHTMLTable(phenotypes, "phenotypeTable")}
         </div>
     `;
 
 
-    // Create DataTable elements
-    $('#humGenesTable').DataTable({
-        columnDefs: [{ targets: [], visible: false }],
+    // Function to hide columns in DataTables by name
+    function hideColumnsByName(table, names) {
+        table.columns().every(function () {
+            const header = $(this.header()).text().trim();
+            if (names.includes(header)) {
+                this.visible(false);
+            }
+        });
+    }
+
+
+    // CREATE QUERY GENE DATATABLE ELEMENT
+    $('#queryGenesTable').DataTable({
+        dom: 't',
+        pageLength: 20
+        });
+
+
+    // CREATE QUERY VARIANT DATATABLE ELEMENT
+    const queryVariantTable = $('#queryVariantTable').DataTable({
+        dom: 't',
+        pageLength: 20
+    });
+
+    // Columns that are be hidden by default
+    const queryHiddenCols = [
+                    'Name',
+                    'Submission',
+                    'Gene Symbol',
+                    'refAA',
+                    'protein_start',
+                    'varAA'
+                ];
+
+    // Extra human-only columns to hide
+    const queryHumanHidden = ['MONDO_set'];
+
+    // Hide columns
+    hideColumnsByName(queryVariantTable, queryHiddenCols);
+
+    if (queryOrganism === 'Human') {hideColumnsByName(queryVariantTable, queryHumanHidden);}
+
+
+    // CREATE OUTPUT GENE DATATABLE ELEMENT
+    $('#outputGenesTable').DataTable({
         dom: 't',
         pageLength: 20,
     });
 
-    $('#humVariantTable').DataTable({
-        columnDefs: [{ targets: [0, 1, 2, 12, 13, 16], visible: false }], // Hide input, submission, gene, refAA, varAA, and MONDO_set
-        dom: 't',
-        pageLength: 20,
-    });
 
-    $('#musGenesTable').DataTable({
-        columnDefs: [{ targets: [], visible: false }],
-        dom: 't',
-        pageLength: 20,
-    });
-
-    $('#musModelTable').DataTable({
-        columnDefs: [{ targets: [0, 10, 11, 14], visible: false }], // Hide gene, refAA, varAA, and MONDO_set
+    // CREATE OUTPUT VARIANT DATATABLE ELEMENT
+    const outputVariantTable = $('#outputVariantTable').DataTable({
         dom: 'tp',
         pageLength: 20,
     });
 
-    $('#scoresTable').DataTable({
-        columnDefs: [{ targets: [0], visible: false }], // Hide input
+    // Columns that are be hidden by default
+    const outputHiddenCols = [
+                    'Gene Symbol',
+                    'refAA',
+                    'varAA'
+                ];
+
+    // Extra human-only columns to hide
+    const outputHumanHidden = [
+                    'Submission',
+                    'protein_start'
+                ];
+
+    // Extra mouse-only columns to hide
+    const outputMouseHidden = [
+                    'Allele ID',
+                    'AlleleSymbol',
+                    'MONDO_set'
+                ];
+
+    // Hide columns
+    hideColumnsByName(outputVariantTable, outputHiddenCols);
+
+    if (targetOrganism === 'Human') {hideColumnsByName(outputVariantTable, outputHumanHidden);}
+
+    if (targetOrganism === 'Mouse') {hideColumnsByName(outputVariantTable, outputMouseHidden);}
+    
+
+    // CREATE SCORE DATATABLE ELEMENT
+    const scoreTable = $('#scoresTable').DataTable({
         dom: 'tp',
-        pageLength: 20,
+        pageLength: 20
     });
 
+    // Columns that are be hidden by default
+    const scoreHiddenCols = ['Name'];
+
+    // Hide columns
+    hideColumnsByName(scoreTable, scoreHiddenCols);
+
+
+    // CREATE PHENOTYPE DATATABLE ELEMENT
     $('#phenotypeTable').DataTable({
-        columnDefs: [{ targets: [], visible: false }],
         dom: 'tp',
-        pageLength: 20,
+        pageLength: 20
     });
+
+
 }
 
 
@@ -148,6 +235,7 @@ function renderTables(input, gene) {
 function jsonToHTMLTable(data, tableId) {
     if (!data || data.length === 0) return `<p>No data</p>`;
 
+    const org = document.getElementById('queryOrganism').value;
     const columns = Object.keys(data[0]);
 
     let html = `<table id="${tableId}" class="table.dataTable">`;
@@ -158,6 +246,8 @@ function jsonToHTMLTable(data, tableId) {
     });
 
     html += `</tr></thead><tbody>`;
+
+    console.log(tableId)
 
     data.forEach(row => {
         html += `<tr>`;
@@ -181,6 +271,10 @@ function jsonToHTMLTable(data, tableId) {
             // Add linking for PFAM domains
             if (col === 'Pfam Domain ID' && value) {
                 value = `<a href="https://www.ebi.ac.uk/interpro/entry/pfam/${value}" target="_blank" rel="noopener noreferrer">${value}</a>`;
+            }
+
+            if (col === 'Name' && org === 'mouse' && tableId == 'outputVariantTable' && value) {
+                value = `<a href="https://www.ncbi.nlm.nih.gov/clinvar?term=${value}" target="_blank" rel="noopener noreferrer">${value}</a>`;
             }
 
             html += `<td>${value}</td>`;

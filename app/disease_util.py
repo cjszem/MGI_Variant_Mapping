@@ -129,15 +129,15 @@ def assign_clinvar(variants):
     Fetch ClinVar disease associations for a list of variants.
 
     Parameters:
-        variants: DataFrame. Expects Input, Chromosome, STart, Stop, Ref, Alt.
+        variants: DataFrame. Expects Name, Chromosome, STart, Stop, Ref, Alt.
     
     Returns:
-        DataFrame. Contains Input and CLINDISDB.
+        DataFrame. Contains Name and CLINDISDB.
     '''
     results = []
 
     # Precompute HGVS list
-    hgvs_list = variants['Input'].tolist()
+    hgvs_list = variants['Name'].tolist()
 
     # Cache to avoid redundant queries
     cache = {}
@@ -149,7 +149,7 @@ def assign_clinvar(variants):
         if key not in cache:
             cache[key] = search_clinvar(chrom, start, stop, ref, alt)
 
-        results.append({'Input': hgvs_list[idx], 'CLNDISDB': cache[key]})
+        results.append({'Name': hgvs_list[idx], 'CLNDISDB': cache[key]})
 
     return pd.DataFrame(results)
 

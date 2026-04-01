@@ -113,13 +113,13 @@ def fetch_gene_info(genes, species='human'):
 def fetch_homologous_gene(input_mapping_df, species):
     '''
     '''
-    if species == 'human':
+    if species == 'mouse':
         input_mapping_df = homology_df.merge(input_mapping_df, left_on='HumGeneSymbol', right_on='Hum Gene', how='inner')\
                                     .rename(columns={'MusGeneSymbol': 'Mus Gene'}).copy()
         input_mapping_df.drop(['HumGeneSymbol', 'Mus_HGNC_ID', 'HumEntrezGeneID', 'MusEntrezGeneID'], axis=1, inplace=True)
 
-    elif species == 'mouse':
-        input_mapping_df = homology_df.merge(input_mapping_df, left_on='HumGeneSymbol', right_on='Mus Gene', how='inner')\
+    elif species == 'human':
+        input_mapping_df = homology_df.merge(input_mapping_df, left_on='MusGeneSymbol', right_on='Mus Gene', how='inner')\
                                     .rename(columns={'HumGeneSymbol': 'Hum Gene'}).copy()
         input_mapping_df.drop(['MusGeneSymbol', 'Mus_HGNC_ID', 'HumEntrezGeneID', 'MusEntrezGeneID'], axis=1, inplace=True)
 

@@ -1,4 +1,5 @@
 import json
+import re
 import yaml
 import obonet
 import requests
@@ -8,6 +9,13 @@ import pandas as pd
 # Load Config
 with open('app/config.yaml') as f:
     config = yaml.safe_load(f)
+
+# Create AA map
+aa_multi_to_single = {'Ala':'A', 'Arg':'R', 'Asn':'N', 'Asp':'D',
+                      'Cys':'C', 'Glu':'E', 'Gln':'Q', 'Gly':'G',
+                      'His':'H', 'Ile':'I', 'Leu':'L', 'Lys':'K',
+                      'Met':'M', 'Phe':'F', 'Pro':'P', 'Ser':'S',
+                      'Thr':'T', 'Trp':'W', 'Tyr':'Y', 'Val':'V'}
 
 
 def download_file(input_url, output_path):
@@ -93,7 +101,20 @@ def parse_ncbi_variant_summary(summary_path, output_path):
 
     var = pd.read_csv(summary_path, sep='\t', usecols=cols)
 
-    var.rename(columns={'#AlleleID': 'AlleleID'}, inplace=True)
+    print(var['Type'].value_counts())
 
-    var_grch38 = var[var['Assembly'] == 'GRCh38']
+    var_grch38 = var[(var['Assembly'] == 'GRCh38')] #  & (var['Type'] == 'single nucleotide variant')
+
+    var_grch38.rename(columns={'#AlleleID': 'AlleleID'}, inplace=True)
+
+
+    prot_pattern = re.compile(r'p\.([A-Za-z]{3})\d+([A-Za-z]{3}|=|fs|\*)')
+
+    # Extract REF/ALT proteins as new columns
+    var_grch38[['refAA', 'varAA']] = var_grch38['Name'].str.extract(prot_pattern)
+
+
+    var_grch38['refAA'] = var_grch38['refAA'].map(aa_multi_to_single)
+    var_grch38['varAA'] = var_grch38['varAA'].map(aa_multi_to_single)
+
     var_grch38.to_csv(output_path, sep='\t', index=False)

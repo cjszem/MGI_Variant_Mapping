@@ -2,7 +2,7 @@ import yaml
 import logging
 import pandas as pd
 from app.log_util import log_batch_query
-from app.processing_util import prepare_input, process_human_fetch
+from app.processing_util import prepare_submission, process_human_fetch
 from app.vep_util import prepare_vep_output, run_vep
 from app.phenotype_util import allele_phenotype_match
 from app.gene_util import fetch_gene_info, fetch_mus_alleles, fetch_homologous_gene, process_mus_alleles
@@ -43,8 +43,8 @@ def hvar_query(variants, assembly='GRCh38'):
     # Log the query
     log_batch_query(variants)
     
-    # Prepare HGVS notation
-    variants, submission_map = prepare_input(variants)
+    # Prepare common notation names
+    variants, submission_names_map = prepare_submission(variants)
 
 
     # Query VEP
@@ -52,14 +52,14 @@ def hvar_query(variants, assembly='GRCh38'):
 
 
     # Assign input field
-    vep_df['Input'] = vep_df['Submission'].map(submission_map)
+    vep_df['Name'] = vep_df['Submission'].map(submission_names_map)
 
     # Clean VEP output into protein DataFrame
     protein_df = prepare_vep_output(vep_df)
 
 
     # Create a human gene to input mapping DataFrame
-    input_gene_df = (protein_df[['Input', 'Gene Symbol']].drop_duplicates()
+    input_gene_df = (protein_df[['Name', 'Gene Symbol']].drop_duplicates()
                      .rename(columns={'Gene Symbol': 'Hum Gene'}).copy())
 
     # Build gene table
@@ -70,7 +70,7 @@ def hvar_query(variants, assembly='GRCh38'):
     # Disease Associations
     disease_df = assign_clinvar(variants)
     disease_df = clndisdb_to_mondo(disease_df)
-    protein_df = protein_df.merge(disease_df, on='Input', how='left')
+    protein_df = protein_df.merge(disease_df, on='Name', how='left')
 
     gene_df = gene_df.where(pd.notnull(gene_df), None)
     protein_df = protein_df.where(pd.notnull(protein_df), None)
@@ -126,8 +126,6 @@ def mvar_fetch(input_mapping_df, assembly='GRCm39'):
     genes = gene_input_df['Mus Gene'].unique()
     mus_gene_df = fetch_gene_info(genes, species='mouse')
 
-    gene_input_df.to_csv('app/testing_results/gene_input_df.csv', index=False)
-
 
     # Extract gene ids
     MGI_gene_ids = mus_gene_df['Accession'].unique()
@@ -144,8 +142,8 @@ def mvar_fetch(input_mapping_df, assembly='GRCm39'):
     mouse_prt_df = mouse_prt_df[mouse_prt_df['AlleleID'].isin(doid_map.keys())]
 
 
-    # Perpare HGVS for VEP
-    mouse_prt_df, _ = prepare_input(mouse_prt_df)
+    # Prepare common notation names
+    mouse_prt_df, _ = prepare_submission(mouse_prt_df)
     allele_map = mouse_prt_df[['Submission', 'Gene Symbol', 'AlleleID', 'AlleleSymbol']]
 
 
@@ -205,7 +203,7 @@ def mvar_fetch(input_mapping_df, assembly='GRCm39'):
     return mus_gene_df, mouse_prt_df, phenotype_df, gene_input_df
 
 
-def score(hum_prt_df, mouse_prt_df, gene_inputs):
+def hvar_query_score(hum_prt_df, mouse_prt_df, gene_inputs):
     '''
     Creates score DF for human and mouse results.
 
@@ -221,11 +219,11 @@ def score(hum_prt_df, mouse_prt_df, gene_inputs):
     hum_prt_df['MONDO_set'] = hum_prt_df['MONDO'].apply(set)
     mouse_prt_df['MONDO_set'] = mouse_prt_df['MONDO'].apply(set)
 
-    expanded_df = gene_inputs.merge(hum_prt_df, on='Input', suffixes=('', '_human'))
+    expanded_df = gene_inputs.merge(hum_prt_df, on='Name', suffixes=('', '_human'))
     expanded_df = expanded_df.merge(mouse_prt_df, left_on='Mus Gene', right_on='Gene Symbol', suffixes=('_human', '_mouse'))
 
     score_df = pd.DataFrame()
-    score_df['Input'] = expanded_df['Input']
+    score_df['Name'] = expanded_df['Name']
     score_df['AlleleID'] = expanded_df['AlleleID']
     score_df['Allele Symbol'] = expanded_df['AlleleSymbol']
     score_df['Transcript ID'] = expanded_df['Transcript ID_mouse']
@@ -241,7 +239,7 @@ def score(hum_prt_df, mouse_prt_df, gene_inputs):
     match_cols = ['Biotype Match', 'Consequence Match', 'AA Match', 'AA Position Match', 'Exon Match', 'Domain Match', 'Disease Match']
 
     # Calculate precentage of hits
-    score_df['total_score'] = score_df[match_cols].sum(axis=1) / score_df[match_cols].notna().sum(axis=1) * 100
+    score_df['Total Score'] = score_df[match_cols].sum(axis=1) / score_df[match_cols].notna().sum(axis=1) * 100
 
 
     score_df = score_df.where(pd.notnull(score_df), None)
@@ -264,53 +262,144 @@ def mvar_query(variants, assembly='GRCm39'):
     log_batch_query(variants)
     
     # Prepare HGVS notation
-    variants, submission_map = prepare_input(variants)
+    variants, submission_name_map = prepare_submission(variants)
 
 
     # Query VEP
     vep_df = run_vep(variants, 'mus_musculus', query=True)
 
+    print(vep_df)
 
     # Assign input field
-    vep_df['Input'] = vep_df['Submission'].map(submission_map)
+    vep_df['Name'] = vep_df['Submission'].map(submission_name_map)
 
     vep_df.to_csv('app/testing_results/vep_output.csv', index=False)
 
     # Clean VEP output into protein DataFrame
     protein_df = prepare_vep_output(vep_df)
 
-    print(protein_df)
-
 
     # Create a gene to input mapping DataFrame
-    input_gene_df = (protein_df[['Input', 'Gene Symbol']].drop_duplicates()
+    input_gene_df = (protein_df[['Name', 'Gene Symbol']].drop_duplicates()
                      .rename(columns={'Gene Symbol': 'Mus Gene'}).copy())
 
     # Build gene table
     genes = protein_df['Gene Symbol'].unique()
     gene_df = fetch_gene_info(genes, species='mouse')
 
-    
+    # Replace all null with None
+    gene_df = gene_df.where(pd.notnull(gene_df), None)
+    protein_df = protein_df.where(pd.notnull(protein_df), None)
 
+    # Save results
     gene_df.to_csv('app/results/mouse_gene_df.csv', index=False)
     protein_df.to_csv('app/results/mouse_protein_df.csv', index=False)
 
+    # # Print resulting tables
+    # print(gene_df)
+    # print('----------')
+    # print(protein_df)
+    # print('----------')
 
     return gene_df, protein_df, input_gene_df
 
+
 def hvar_fetch(mouse_prt_df, input_mapping_df, assembly='GRCh38'):
-    ''''''
+    '''
+    '''
     # Check assembly
     if assembly != 'GRCh38':
         logging.info(f'Assembly Error: {assembly} is not supported. Only GRCh38 is supported.')
         raise ValueError('Assembly must be GRCh38')
+        
     
-
     # Extract Hum gene symbol
     gene_input_df = fetch_homologous_gene(input_mapping_df, 'human')
 
+
     # Build orthologous gene table
     genes = gene_input_df['Hum Gene'].unique()
-    mus_gene_df = fetch_gene_info(genes, species='human')
+    hum_gene_df = fetch_gene_info(genes, species='human')
+
+    # Extract NCBI variants
+    homologous_variants, phenotype_df = process_human_fetch(hum_gene_df, mouse_prt_df, gene_input_df)
 
 
+    # Query VEP for each variant
+    variants, submission_HGVS_map = prepare_submission(homologous_variants)
+    
+    variant_vep = run_vep(variants, 'homo_sapiens', query=False)
+
+
+    # Assign name field
+    variant_vep['Name'] = variant_vep['Submission'].map(submission_HGVS_map)
+
+    # Clean VEP output
+    hum_protein_df = prepare_vep_output(variant_vep)
+
+
+    # Disease Associations
+    disease_df = assign_clinvar(variants)
+    disease_df = clndisdb_to_mondo(disease_df)
+    hum_protein_df = hum_protein_df.merge(disease_df, on='Name', how='left')
+
+    hum_gene_df = hum_gene_df.where(pd.notnull(hum_gene_df), None)
+    hum_protein_df = hum_protein_df.where(pd.notnull(hum_protein_df), None)
+
+    hum_gene_df.to_csv('app/results/hum_gene_df.csv', index=False)
+    hum_protein_df.to_csv('app/results/hum_protein_df.csv', index=False)
+
+    # # Print resulting tables
+    # print(hum_gene_df)
+    # print('----------')
+    # print(hum_protein_df)
+    # print('----------')
+
+
+    return hum_gene_df, hum_protein_df, phenotype_df, gene_input_df
+
+
+def mvar_query_score(mouse_prt_df, hum_prt_df, gene_inputs):
+    '''
+    Creates score df for mouse and human results.
+
+    Parameters:
+        mouse_prt: pandas.DataFrame. Mouse variant dataframe.
+        hum_prt: pandas.DataFrame. Human variant dataframe.
+        gene_inputs: pandas.DataFrame. Gene-homolog-input mapping dataframe.
+
+    Returns:
+        pandas.DataFrame. contains score information for each variant-model pair.
+    '''
+    s = time.time()
+
+    expanded_df = gene_inputs.merge(hum_prt_df, left_on='Hum Gene', right_on='Gene Symbol', suffixes=('', '_human'))
+    expanded_df = expanded_df.merge(mouse_prt_df, on='Name', suffixes=('', '_mouse'))
+
+    expanded_df.to_csv('app/testing_results/score_test.csv', index=False)
+
+    score_df = pd.DataFrame()
+    score_df['Name'] = expanded_df['Name']
+    score_df['Transcript ID'] = expanded_df['Transcript ID']
+    score_df['Biotype Match'] = expanded_df['Biotype_mouse'] == expanded_df['Biotype']
+    score_df['Consequence Match'] = expanded_df['Molecular Consequence_mouse'] == expanded_df['Molecular Consequence']
+    score_df['AA Match'] = (expanded_df['refAA_mouse'] == expanded_df['refAA']) & (expanded_df['varAA_mouse'] == expanded_df['varAA'])
+    score_df['AA Position Match'] = expanded_df['Amino Acids_mouse'] == expanded_df['Amino Acids']
+    score_df['Exon Match'] = expanded_df['Exon Rank_mouse'] == expanded_df['Exon Rank']
+    score_df['Domain Match'] = expanded_df['Pfam Domain ID_mouse'] == expanded_df['Pfam Domain ID']
+
+    # columns which can be attributed to score
+    match_cols = ['Biotype Match', 'Consequence Match', 'AA Match', 'AA Position Match', 'Exon Match', 'Domain Match']
+
+    # Calculate precentage of hits
+    score_df['Total Score'] = score_df[match_cols].sum(axis=1) / score_df[match_cols].notna().sum(axis=1) * 100
+
+
+    score_df = score_df.where(pd.notnull(score_df), None)
+
+    e = time.time()
+    print(f'Score Time: {e-s}')
+
+    print(score_df)
+
+    return score_df

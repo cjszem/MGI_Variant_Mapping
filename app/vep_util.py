@@ -249,7 +249,7 @@ def prepare_vep_output(vep_df):
     # Split amino_acids to REFAA and VARAA if in X/Y format
     vep_df['protein_start'] = vep_df['protein_start'].astype('Int64')
 
-    # Extract ref/var AA
+    # Extract ref/varAA
     extracted = vep_df['amino_acids'].str.strip().str.extract(r'^(?P<refAA>[^/]+)/(?P<varAA>[^/]+)$')
 
     vep_df['refAA'] = extracted['refAA']
@@ -277,7 +277,7 @@ def prepare_vep_output(vep_df):
 
     
     # Create protein DataFrame
-    keep = ['Input', 'Submission', 'gene_symbol', 'transcript_id', 'HGVS', 'biotype', 'exon', 'Domain', 'polyphen_prediction', 
+    keep = ['Name', 'Submission', 'gene_symbol', 'transcript_id', 'HGVS', 'biotype', 'exon', 'Domain', 'polyphen_prediction', 
             'polyphen_score', 'consequence_terms', 'codons', 'amino_acids', 'refAA', 'protein_start', 'varAA']
     cols_present = [col for col in keep if col in vep_df.columns]
     protein_df = vep_df[cols_present].copy()
@@ -312,11 +312,8 @@ def docker_input(variants):
 
         # Write variants
         for _, row in unique_variants.iterrows():
-            f.write(f'{row['Chromosome']}\t'
-                    f'{row['Start']}\t'
-                    f'.\t'
-                    f'{row['Ref']}\t'
-                    f'{row['Alt']}\n')
+            f.write(f'{row['Submission']}\n')
+            
 
 def docker_vep(species, query=True, input_file='input.vcf', output_file='output.json'):
     '''
@@ -342,15 +339,16 @@ def docker_vep(species, query=True, input_file='input.vcf', output_file='output.
            '--domains',
            '--biotype',
            '--symbol',
-           '--numbers']
+           '--numbers',
+           '--coding_only']
     
-    if species == 'homo_sapiens' and query:
+    if species == 'homo_sapiens':
         cmd += ['--polyphen', 'b',
                 '--pick', '--pick_order', 
                 'mane_select,length']
     
     if species == 'mus_musculus' and query:
-        cmd += ['--pick', '--coding_only',
+        cmd += ['--pick',
                 '--pick_order', 'canonical,length']
 
     subprocess.run(cmd, check=True)
@@ -369,7 +367,7 @@ def parse_vep_json(input_file='app/processing/vep/output.json'):
     all_dfs = []
 
     with open(input_file) as f:
-        for line in f:  # NDJSON: one variant per line
+        for line in f:
             if not line.strip():
                 continue
 
@@ -427,6 +425,8 @@ def run_vep(variants, species, query=True):
     docker_vep(species, query=query)
     
     vep_df = parse_vep_json()
+
+    print(vep_df)
 
     vep_df.to_csv('app/testing_results/vep.csv', index=False)
 

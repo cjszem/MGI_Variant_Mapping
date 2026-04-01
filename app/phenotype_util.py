@@ -26,4 +26,6 @@ def allele_phenotype_match(allele_df):
 
     phenotype_df['Phenotypes'] = (phenotype_df['Phenotypes'].str.split('|'))
 
+    print(phenotype_df)
+
     return phenotype_df

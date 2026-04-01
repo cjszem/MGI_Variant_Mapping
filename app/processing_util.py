@@ -11,12 +11,6 @@ clinvar_vcf = VCF(config['paths']['clinvar_vcf'])
 
 variant_summary_grch38 = pd.read_csv(config['paths']['ncbi_var_summary_grch38'], sep='\t')
 
-amino_acid_map = pd.read_csv(config['paths']['amino_acids'])
-
-
-print(variant_summary_grch38.columns)
-
-print(variant_summary_grch38.head())
 
 def process_batch_query(input):
     '''
@@ -40,7 +34,7 @@ def process_batch_query(input):
         # Extract inputted variant fields
         match = re.match(pattern, line)
         if match:
-            variants.append({'Input': match.group(0),
+            variants.append({'Name': match.group(0),
                              'Chromosome': match.group(1),
                              'Start': int(match.group(2)),
                              'Stop': int(match.group(3)),
@@ -53,7 +47,7 @@ def process_batch_query(input):
     return variants
 
 
-def prepare_input(variants):
+def prepare_submission(variants):
     '''
     Converts a DataFrame of variants into a list of HGHVS notations for VEP querying
     
@@ -61,33 +55,67 @@ def prepare_input(variants):
         variants: DataFrame. containing Chromosome, Start, Ref, Alt.
 
     Returns:
-        tuple. list of strings and dictionary. HGVS notations (chrom:g.startRef>Alt) and mapping of HGVS to input.
+        tuple. list of strings and dictionary. HGVS notations (chrom:g.startRef>Alt) and mapping of HGVS to names.
     '''
     variants['Submission'] = (variants['Chromosome'].astype(str) + '\t' + variants['Start'].astype(str) + '\t.\t' + variants['Ref'] + '\t' + variants['Alt'])
 
-    try: submission_map = dict(zip(variants['Submission'], variants['Input']))
+    try: submission_HGVS_map = dict(zip(variants['Submission'], variants['Name']))
 
-    except: submission_map = None
+    except: submission_HGVS_map = None
 
-    return variants, submission_map
+    return variants, submission_HGVS_map
 
 
-def process_human_fetch(mouse_protein_df):
+def process_human_fetch(hum_gene_df, mouse_protein_df, gene_input_df):
 
-    # NEED TO MAKE WORK FOR MULT ROWS
+    merged_df = mouse_protein_df.merge(gene_input_df, left_on='Gene Symbol', right_on='Mus Gene')
 
-    genes = mouse_protein_df['Gene Symbol'][1]
+    homologous_variants = variant_summary_grch38.merge(
+        merged_df[['Hum Gene', 'refAA', 'varAA']],
+        left_on=['GeneSymbol', 'refAA', 'varAA'],
+        right_on=['Hum Gene', 'refAA', 'varAA'],
+        how='inner'
+    )
 
-    refAA = mouse_protein_df['refAA'][1]
-    mult_refAA = amino_acid_map[amino_acid_map['Single Letter Code'] == refAA]['Multiple Letter Code']
-    
-    varAA = mouse_protein_df['varAA'][1]
-    mult_varAA = amino_acid_map[amino_acid_map['Single Letter Code'] == varAA]['Multiple Letter Code']
+    homologous_variants = homologous_variants.merge(
+        hum_gene_df[['Gene Symbol', 'Strand']],
+        left_on=['GeneSymbol'],
+        right_on=['Gene Symbol'],
+        how='inner'
+    )
 
-    posAA = mouse_protein_df['protein_start'][1]
+    genomic_pattern = re.compile(r'(?i)\b[crgm]\.\d+(?:[_+-]\d+)?(?P<ref>[ACGT])>(?P<alt>[ACGT])')
 
-    p_long = 'p.' + mult_refAA + str(posAA) + mult_varAA
+    # Extract REF/ALT as new columns
+    homologous_variants[['Ref', 'Alt']] = homologous_variants['Name'].str.extract(genomic_pattern)
+    homologous_variants.drop(columns=['ReferenceAllele', 'AlternateAllele'], inplace=True)
 
-    homologous_variants = variant_summary_grch38[variant_summary_grch38['GeneSymbol'].isin(genes) & variant_summary_grch38['Name'].str.contains(p_long)]
 
-    return homologous_variants
+    # Map alleles to correct strand
+    compliment_map = {'A':'T', 'T':'A', 'C':'G', 'G':'C'}
+    mask = homologous_variants['Strand'] == '-'
+
+    homologous_variants.loc[mask, 'Ref'] = (homologous_variants.loc[mask, 'Ref'].map(compliment_map))
+    homologous_variants.loc[mask, 'Alt'] = (homologous_variants.loc[mask, 'Alt'].map(compliment_map))
+
+
+    # Extract phenotypes
+    phenotype_df = homologous_variants[['Name', 'PhenotypeIDS', 'PhenotypeList']].copy()
+    phenotype_df['PhenotypeIDS'] = phenotype_df['PhenotypeIDS'].str.split('|')
+    phenotype_df['PhenotypeList'] = phenotype_df['PhenotypeList'].str.split('|')
+
+    phenotype_df = phenotype_df.explode(['PhenotypeIDS', 'PhenotypeList'], ignore_index=True)
+    phenotype_df['HP_ID'] = phenotype_df['PhenotypeIDS'].str.extract(r'(HP:\d+)', expand=False)
+    phenotype_df = phenotype_df.dropna(subset=['HP_ID'])
+    phenotype_df['Phenotype'] = phenotype_df['HP_ID'] + ',' + phenotype_df['PhenotypeList']
+
+
+    phenotype_df = (
+        phenotype_df
+        .groupby('Name', sort=False)['Phenotype']
+        .apply(list)
+        .reset_index()
+    )
+    print(phenotype_df)
+
+    return homologous_variants, phenotype_df

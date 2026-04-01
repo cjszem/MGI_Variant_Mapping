@@ -48,6 +48,13 @@
         </div>
 
         <div>
+            <select name="Query Organism" id="queryOrganism">
+                <option value="human">Human (GRCh38)</option>
+                <option value="mouse">Mouse (GRCm39)</option>
+            </select>
+        </div>
+
+        <div>
             <button id="runButton">Submit</button>
         </div>
 
@@ -60,6 +67,10 @@
     <div id="layoutOutput">
         <div id="sidebar"></div>
         <div id="results"></div>
+    </div>
+
+    <div>
+        <p class="details">This is a novel pipeline that is subject to changes, ensure to confirm all outputs prior to use. Vist our <a href="https://github.com/cjszem/MGI_Variant_Mapping">repository</a> for documentation and source code.</p>
     </div>
 
     <script src="/static/app.js"></script>

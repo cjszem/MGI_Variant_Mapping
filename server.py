@@ -3,8 +3,9 @@ from pydantic import BaseModel
 from fastapi.responses import FileResponse, JSONResponse
 from fastapi.staticfiles import StaticFiles
 from fastapi.encoders import jsonable_encoder
+import pandas as pd
 
-from app.main_util import hvar_query, mvar_fetch, score
+from app.main_util import hvar_query, mvar_fetch, hvar_query_score, mvar_query, hvar_fetch, mvar_query_score
 from app.processing_util import process_batch_query
 
 app = FastAPI()
@@ -16,29 +17,40 @@ def serve_dashboard():
     return FileResponse('templates/dashboard.html')
 
 class VariantInput(BaseModel):
-    input: str
+    variants: str
+    organism: str
 
 @app.post('/run_variants')
 def run_variants(data: VariantInput):
 
-    print(data.input)
+    print(data.variants)
 
-    variants = process_batch_query(data.input)
+    print(data.organism)
+
+    variants = process_batch_query(data.variants)
 
     variants.to_csv('test/variants.csv')
 
-    hum_gene_df, hum_prt_df, input_gene_df = hvar_query(variants)
-    mouse_gene_df, mouse_prt_df, phenotype_df, gene_input_df = mvar_fetch(input_gene_df)
-    score_df = score(hum_prt_df, mouse_prt_df, gene_input_df)
+    if data.organism == 'human':
 
-    results = {'human_genes': hum_gene_df.to_dict(orient='records'),
-               'human_proteins': hum_prt_df.to_dict(orient='records'),
-               'mouse_genes': mouse_gene_df.to_dict(orient='records'),
-               'mouse_proteins': mouse_prt_df.to_dict(orient='records'),
-               'scores': score_df.to_dict(orient='records'),
-               'phenotypes': phenotype_df.to_dict(orient='records'),
-               'gene_mapping': gene_input_df.to_dict(orient='records')}
+        query_gene_df, query_prt_df, input_genes = hvar_query(variants)
+        output_gene_df, output_prt_df, output_phenotype_df, input_genes = mvar_fetch(input_genes)
+        score_df = hvar_query_score(query_prt_df, output_prt_df, input_genes)
 
+    if data.organism == 'mouse':
+
+        query_gene_df, query_prt_df, input_genes = mvar_query(variants)
+        output_gene_df, output_prt_df, output_phenotype_df, input_genes = hvar_fetch(query_prt_df, input_genes)
+        score_df = mvar_query_score(query_prt_df, output_prt_df, input_genes)
+
+    results = {'query_genes': query_gene_df.to_dict(orient='records'),
+            'query_proteins': query_prt_df.to_dict(orient='records'),
+            'output_genes': output_gene_df.to_dict(orient='records'),
+            'output_proteins': output_prt_df.to_dict(orient='records'),
+            'scores': score_df.to_dict(orient='records'),
+            'phenotypes': output_phenotype_df.to_dict(orient='records'),
+            'gene_mapping': input_genes.to_dict(orient='records')}
+    
     safe_result = jsonable_encoder(results)
 
     return JSONResponse(content=safe_result)
