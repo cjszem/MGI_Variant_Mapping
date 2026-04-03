@@ -15,7 +15,8 @@ aa_multi_to_single = {'Ala':'A', 'Arg':'R', 'Asn':'N', 'Asp':'D',
                       'Cys':'C', 'Glu':'E', 'Gln':'Q', 'Gly':'G',
                       'His':'H', 'Ile':'I', 'Leu':'L', 'Lys':'K',
                       'Met':'M', 'Phe':'F', 'Pro':'P', 'Ser':'S',
-                      'Thr':'T', 'Trp':'W', 'Tyr':'Y', 'Val':'V'}
+                      'Thr':'T', 'Trp':'W', 'Tyr':'Y', 'Val':'V',
+                      'Ter':'*', '=':'='}
 
 
 def download_file(input_url, output_path):
@@ -108,7 +109,7 @@ def parse_ncbi_variant_summary(summary_path, output_path):
     var_grch38.rename(columns={'#AlleleID': 'AlleleID'}, inplace=True)
 
 
-    prot_pattern = re.compile(r'p\.([A-Za-z]{3})\d+([A-Za-z]{3}|=|fs|\*)')
+    prot_pattern = re.compile(r'p\.([A-Za-z]{3})\d+([A-Za-z]{3}|=)')
 
     # Extract REF/ALT proteins as new columns
     var_grch38[['refAA', 'varAA']] = var_grch38['Name'].str.extract(prot_pattern)

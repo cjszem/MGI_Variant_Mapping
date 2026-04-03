@@ -68,7 +68,7 @@ function renderTables(name, gene) {
         queryShort = 'Hum';
         targetOrganism = 'Mouse';
         targetShort = 'Mus';
-    } else if (org === "mouse") {
+    } else if (org === 'mouse') {
         queryOrganism = 'Mouse';
         queryShort = 'Mus';
         targetOrganism = 'Human';
@@ -77,17 +77,28 @@ function renderTables(name, gene) {
 
 
     // Extract homolog
-    homolog = window.fullJSON.gene_mapping.find(r => r[`${queryShort} Gene`] === gene)?.[`${targetShort} Gene`]
+    homolog = window.fullJSON.gene_mapping.find(row => row[`${queryShort} Gene`] === gene)?.[`${targetShort} Gene`]
 
 
     // Extract relevant tables
-    const queryGenes = window.fullJSON.query_genes.filter(row => row['Gene Symbol'] === gene);
-    const queryProteins = window.fullJSON.query_proteins.filter(row => row['Name'] === name);
-    const outputGenes = window.fullJSON.output_genes.filter(row => row['Gene Symbol'] === homolog);
-    const outputProteins = window.fullJSON.output_proteins.filter(row => row['Gene Symbol'] === homolog);
-    const scores = window.fullJSON.scores.filter(row => row['Name'] === name);
-    const phenotypes = window.fullJSON.phenotypes.filter(row => row['Gene Symbol'] === homolog);
-
+    if (org === 'human') {
+        queryGenes = window.fullJSON.query_genes.filter(row => row['Gene Symbol'] === gene);
+        queryProteins = window.fullJSON.query_proteins.filter(row => row['Name'] === name);
+        outputGenes = window.fullJSON.output_genes.filter(row => row['Gene Symbol'] === homolog);
+        outputProteins = window.fullJSON.output_proteins.filter(row => row['Gene Symbol'] === homolog);
+        scores = window.fullJSON.scores.filter(row => row['Input Name'] === name);
+        phenotypes = window.fullJSON.phenotypes.filter(row => row['Gene Symbol'] === homolog);
+    }
+    else if (org === 'mouse') {
+        queryGenes = window.fullJSON.query_genes.filter(row => row['Gene Symbol'] === gene);
+        queryProteins = window.fullJSON.query_proteins.filter(row => row['Name'] === name);
+        outputGenes = window.fullJSON.output_genes.filter(row => row['Gene Symbol'] === homolog);
+        outputProteins = window.fullJSON.output_proteins.filter(row => row['Gene Symbol'] === homolog 
+                                                                        && queryProteins.some(r => r.refAA === row.refAA)
+                                                                        && queryProteins.some(r => r.varAA === row.varAA));
+        scores = window.fullJSON.scores.filter(row => row['Input Name'] === name);
+        phenotypes = window.fullJSON.phenotypes.filter(row => outputProteins.some(r => r.Name === row.Name));
+    }
 
     // Create HTML tables
     results.innerHTML = `
@@ -150,7 +161,7 @@ function renderTables(name, gene) {
 
     // Columns that are be hidden by default
     const queryHiddenCols = [
-                    'Name',
+                    'Input Name',
                     'Submission',
                     'Gene Symbol',
                     'refAA',
@@ -182,6 +193,7 @@ function renderTables(name, gene) {
 
     // Columns that are be hidden by default
     const outputHiddenCols = [
+                    'Input Name',
                     'Gene Symbol',
                     'refAA',
                     'varAA'
@@ -215,7 +227,7 @@ function renderTables(name, gene) {
     });
 
     // Columns that are be hidden by default
-    const scoreHiddenCols = ['Name'];
+    const scoreHiddenCols = ['Input Name'];
 
     // Hide columns
     hideColumnsByName(scoreTable, scoreHiddenCols);

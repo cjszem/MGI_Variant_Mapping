@@ -107,15 +107,14 @@ def process_human_fetch(hum_gene_df, mouse_protein_df, gene_input_df):
     phenotype_df = phenotype_df.explode(['PhenotypeIDS', 'PhenotypeList'], ignore_index=True)
     phenotype_df['HP_ID'] = phenotype_df['PhenotypeIDS'].str.extract(r'(HP:\d+)', expand=False)
     phenotype_df = phenotype_df.dropna(subset=['HP_ID'])
-    phenotype_df['Phenotype'] = phenotype_df['HP_ID'] + ',' + phenotype_df['PhenotypeList']
+    phenotype_df['Phenotypes'] = phenotype_df['HP_ID'] + ',' + phenotype_df['PhenotypeList']
 
 
     phenotype_df = (
         phenotype_df
-        .groupby('Name', sort=False)['Phenotype']
+        .groupby('Name', sort=False)['Phenotypes']
         .apply(list)
         .reset_index()
     )
-    print(phenotype_df)
 
     return homologous_variants, phenotype_df

@@ -8,4 +8,4 @@ app/data/Ensembl/Mus_musculus.GRCm39.115.gff3.gz
 app/results/
 app/testing_results/
 app/testing/
-app/processing/
+app/vep/

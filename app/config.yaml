@@ -45,8 +45,10 @@ paths:
   mouse_gene_pqt: "app/data/Ensembl/mouse_gene_data.parquet"
   human_gene_pqt: "app/data/Ensembl/human_gene_data.parquet"
 
-  vep_cache: "/Users/szemac/.vep"
-  vep_processing: "/Users/szemac/Desktop/MGI_Variant_Mapping/app/processing/vep"
+  apptainer_main: "/main"
+  apptainer_cache: "/opt/vep/.vep"
+  vep_input: "app/vep/processing/input.vcf"
+  vep_output: "app/vep/processing/output.json"
 
 logging:
   file: "app/mapping.log"

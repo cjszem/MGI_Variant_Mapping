@@ -1,13 +1,14 @@
+from app.log_util import log_batch_query
+from app.processing_util import prepare_submission, process_human_fetch
+from app.gene_util import fetch_gene_info, fetch_mus_alleles, fetch_homologous_gene, process_mus_alleles
+from app.vep_util import prepare_vep_output, run_vep
+from app.phenotype_util import allele_phenotype_match
+from app.disease_util import assign_clinvar, fetch_mus_doid, clndisdb_to_mondo, map_doids_to_mondo
+
+import time
 import yaml
 import logging
 import pandas as pd
-from app.log_util import log_batch_query
-from app.processing_util import prepare_submission, process_human_fetch
-from app.vep_util import prepare_vep_output, run_vep
-from app.phenotype_util import allele_phenotype_match
-from app.gene_util import fetch_gene_info, fetch_mus_alleles, fetch_homologous_gene, process_mus_alleles
-from app.disease_util import assign_clinvar, fetch_mus_doid, clndisdb_to_mondo, map_doids_to_mondo
-import time
 
 # Load config
 with open('app/config.yaml') as f:
@@ -60,7 +61,8 @@ def hvar_query(variants, assembly='GRCh38'):
 
     # Create a human gene to input mapping DataFrame
     input_gene_df = (protein_df[['Name', 'Gene Symbol']].drop_duplicates()
-                     .rename(columns={'Gene Symbol': 'Hum Gene'}).copy())
+                     .rename(columns={'Gene Symbol': 'Hum Gene',
+                                      'Name': 'Input Name'}).copy())
 
     # Build gene table
     genes = protein_df['Gene Symbol'].unique()
@@ -92,7 +94,7 @@ def hvar_query(variants, assembly='GRCh38'):
     return gene_df, protein_df, input_gene_df
 
 
-def mvar_fetch(input_mapping_df, assembly='GRCm39'):
+def mvar_fetch(input_gene_df, assembly='GRCm39'):
     '''
     Annotate a mouse variant using local gene metadata, Ensembl VEP, and MouseMine.
 
@@ -120,20 +122,20 @@ def mvar_fetch(input_mapping_df, assembly='GRCm39'):
     
 
     # Extract Mus gene symbol
-    gene_input_df = fetch_homologous_gene(input_mapping_df, 'mouse')
+    gene_input_df = fetch_homologous_gene(input_gene_df, 'mouse')
 
     # Build orthologous gene table
     genes = gene_input_df['Mus Gene'].unique()
-    mus_gene_df = fetch_gene_info(genes, species='mouse')
+    mouse_gene_df = fetch_gene_info(genes, species='mouse')
 
 
     # Extract gene ids
-    MGI_gene_ids = mus_gene_df['Accession'].unique()
+    MGI_gene_ids = mouse_gene_df['Accession'].unique()
 
     # Fetch mouse alleles
     mouse_allele_df = fetch_mus_alleles(MGI_gene_ids)
     mouse_prt_df = process_mus_alleles(mouse_allele_df)
-    
+
 
     # Query MGD for ontology associations
     doid_map = fetch_mus_doid(mouse_prt_df['AlleleID'].unique())
@@ -183,16 +185,18 @@ def mvar_fetch(input_mapping_df, assembly='GRCm39'):
     phenotype_df = allele_phenotype_match(mouse_allele_df)
 
     # Replace all null with None
-    mus_gene_df = mus_gene_df.where(pd.notnull(mus_gene_df), None)
+    mouse_gene_df = mouse_gene_df.where(pd.notnull(mouse_gene_df), None)
     mouse_prt_df = mouse_prt_df.where(pd.notnull(mouse_prt_df), None)
     phenotype_df = phenotype_df.where(pd.notnull(phenotype_df), None)
 
     # Save debugging tables to CSVs
-    mus_gene_df.to_csv('app/results/mouse_gene_df.csv', index=False)
+    mouse_gene_df.to_csv('app/results/mouse_gene_df.csv', index=False)
     mouse_prt_df.to_csv('app/results/mouse_protein_df.csv', index=False)
+    phenotype_df.to_csv('app/results/mouse_phenotype_df.csv', index=False)
+    gene_input_df.to_csv('app/results/gene_input_df.csv', index=False)
 
     # Print resulting tables
-    # print(mus_gene_df)
+    # print(mouse_gene_df)
     # print('----------')
     # print(mouse_prt_df)
     # print('----------')
@@ -200,7 +204,7 @@ def mvar_fetch(input_mapping_df, assembly='GRCm39'):
     e = time.time()
     print(f'Mouse Time: {e-s}')
 
-    return mus_gene_df, mouse_prt_df, phenotype_df, gene_input_df
+    return mouse_gene_df, mouse_prt_df, phenotype_df, gene_input_df
 
 
 def hvar_query_score(hum_prt_df, mouse_prt_df, gene_inputs):
@@ -219,11 +223,11 @@ def hvar_query_score(hum_prt_df, mouse_prt_df, gene_inputs):
     hum_prt_df['MONDO_set'] = hum_prt_df['MONDO'].apply(set)
     mouse_prt_df['MONDO_set'] = mouse_prt_df['MONDO'].apply(set)
 
-    expanded_df = gene_inputs.merge(hum_prt_df, on='Name', suffixes=('', '_human'))
+    expanded_df = gene_inputs.merge(hum_prt_df, left_on='Input Name', right_on='Name', suffixes=('', '_human'))
     expanded_df = expanded_df.merge(mouse_prt_df, left_on='Mus Gene', right_on='Gene Symbol', suffixes=('_human', '_mouse'))
 
     score_df = pd.DataFrame()
-    score_df['Name'] = expanded_df['Name']
+    score_df['Input Name'] = expanded_df['Input Name']
     score_df['AlleleID'] = expanded_df['AlleleID']
     score_df['Allele Symbol'] = expanded_df['AlleleSymbol']
     score_df['Transcript ID'] = expanded_df['Transcript ID_mouse']
@@ -247,6 +251,8 @@ def hvar_query_score(hum_prt_df, mouse_prt_df, gene_inputs):
     e = time.time()
     print(f'Score Time: {e-s}')
 
+    score_df.to_csv('app/results/score_df.csv', index=False)
+
     return score_df
 
 
@@ -268,7 +274,6 @@ def mvar_query(variants, assembly='GRCm39'):
     # Query VEP
     vep_df = run_vep(variants, 'mus_musculus', query=True)
 
-    print(vep_df)
 
     # Assign input field
     vep_df['Name'] = vep_df['Submission'].map(submission_name_map)
@@ -281,7 +286,8 @@ def mvar_query(variants, assembly='GRCm39'):
 
     # Create a gene to input mapping DataFrame
     input_gene_df = (protein_df[['Name', 'Gene Symbol']].drop_duplicates()
-                     .rename(columns={'Gene Symbol': 'Mus Gene'}).copy())
+                     .rename(columns={'Gene Symbol': 'Mus Gene',
+                                      'Name': 'Input Name'}).copy())
 
     # Build gene table
     genes = protein_df['Gene Symbol'].unique()
@@ -348,6 +354,8 @@ def hvar_fetch(mouse_prt_df, input_mapping_df, assembly='GRCh38'):
 
     hum_gene_df.to_csv('app/results/hum_gene_df.csv', index=False)
     hum_protein_df.to_csv('app/results/hum_protein_df.csv', index=False)
+    phenotype_df.to_csv('app/results/hum_phenotype_df.csv', index=False)
+    gene_input_df.to_csv('app/results/gene_input_df.csv', index=False)
 
     # # Print resulting tables
     # print(hum_gene_df)
@@ -374,11 +382,12 @@ def mvar_query_score(mouse_prt_df, hum_prt_df, gene_inputs):
     s = time.time()
 
     expanded_df = gene_inputs.merge(hum_prt_df, left_on='Hum Gene', right_on='Gene Symbol', suffixes=('', '_human'))
-    expanded_df = expanded_df.merge(mouse_prt_df, on='Name', suffixes=('', '_mouse'))
+    expanded_df = expanded_df.merge(mouse_prt_df, left_on='Input Name', right_on='Name', suffixes=('', '_mouse'))
 
     expanded_df.to_csv('app/testing_results/score_test.csv', index=False)
 
     score_df = pd.DataFrame()
+    score_df['Input Name'] = expanded_df['Input Name']
     score_df['Name'] = expanded_df['Name']
     score_df['Transcript ID'] = expanded_df['Transcript ID']
     score_df['Biotype Match'] = expanded_df['Biotype_mouse'] == expanded_df['Biotype']
@@ -400,6 +409,6 @@ def mvar_query_score(mouse_prt_df, hum_prt_df, gene_inputs):
     e = time.time()
     print(f'Score Time: {e-s}')
 
-    print(score_df)
+    score_df.to_csv('app/results/score_df.csv', index=False)
 
     return score_df

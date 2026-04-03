@@ -5,6 +5,7 @@ import numpy as np
 import pandas as pd
 import subprocess
 import json
+import os
 
 # Load Config
 with open('app/config.yaml') as f:
@@ -15,8 +16,9 @@ ensembl_base_url = config['api']['ensembl_base_url']
 interpro_base_url = config['api']['interpro_base_url']
 
 # Load VEP paths
-vep_cache = config['paths']['vep_cache']
-vep_processing = config['paths']['vep_processing']
+apptainer_main = config['paths']['apptainer_main']
+vep_output_file = config['paths']['vep_output']
+vep_input_file = config['paths']['vep_input']
 
 
 def get_domain_name(pfam_domain_id):
@@ -249,11 +251,16 @@ def prepare_vep_output(vep_df):
     # Split amino_acids to REFAA and VARAA if in X/Y format
     vep_df['protein_start'] = vep_df['protein_start'].astype('Int64')
 
-    # Extract ref/varAA
-    extracted = vep_df['amino_acids'].str.strip().str.extract(r'^(?P<refAA>[^/]+)/(?P<varAA>[^/]+)$')
 
-    vep_df['refAA'] = extracted['refAA']
-    vep_df['varAA'] = extracted['varAA']
+    # Extract ref/varAA
+    aa = vep_df["amino_acids"].astype("string").str.strip().str.extract(r"^(?P<refAA>[A-Z\*])(?:/(?P<varAA>[A-Z\*]))?$")
+
+    vep_df["refAA"] = aa["refAA"]
+    vep_df["varAA"] = aa["varAA"]
+
+    # Handle synoymous variants
+    vep_df["varAA"] = vep_df["varAA"].fillna("=")
+
 
     # Build the change string
     ref_str = vep_df['refAA'].astype('string')
@@ -292,7 +299,7 @@ def prepare_vep_output(vep_df):
     return protein_df
 
 
-def docker_input(variants):
+def vep_input(variants):
     '''
     Creates a VCFv4.0 of unique variants in given DataFrame.
 
@@ -303,7 +310,7 @@ def docker_input(variants):
     '''
     unique_variants = variants.drop_duplicates(subset='Submission')
 
-    with open('app/processing/vep/input.vcf', 'w') as f:
+    with open(vep_input_file, 'w') as f:
         # VCF meta-information
         f.write('##fileformat=VCFv4.0\n')
 
@@ -315,7 +322,7 @@ def docker_input(variants):
             f.write(f'{row['Submission']}\n')
             
 
-def docker_vep(species, query=True, input_file='input.vcf', output_file='output.json'):
+def apptainer_vep(species, query=True, input_file='input.vcf', output_file='output.json'):
     '''
     Runs local VEP on input file for species.
 
@@ -324,13 +331,13 @@ def docker_vep(species, query=True, input_file='input.vcf', output_file='output.
         input_file: str. Input file in processing dictionary. Defaults to 'input.vcf'
         output_file: str. Output file in processing dictionary. Defaults to 'output.json'
     '''
-    cmd = ['docker', 'run', '--rm',
-           '-v', f'{vep_processing}:/processing',
-           '-v', f'{vep_cache}:/opt/vep/.vep',
-           'ensemblorg/ensembl-vep',
-           'vep',
-           '--input_file', f'/processing/{input_file}',
-           '--output_file', f'/processing/{output_file}',
+
+    cmd = ['limactl', 'shell', 'apptainer', '--',
+           'apptainer', 'exec', 
+           '--bind', '/main:/main',
+           f'/main/ensembl-vep.sif', 'vep',
+           '--input_file', f'/main/processing/{input_file}',
+           '--output_file', f'/main/processing/{output_file}',
            '--json',
            '--cache',
            '--offline',
@@ -341,6 +348,7 @@ def docker_vep(species, query=True, input_file='input.vcf', output_file='output.
            '--symbol',
            '--numbers',
            '--coding_only']
+
     
     if species == 'homo_sapiens':
         cmd += ['--polyphen', 'b',
@@ -353,7 +361,8 @@ def docker_vep(species, query=True, input_file='input.vcf', output_file='output.
 
     subprocess.run(cmd, check=True)
 
-def parse_vep_json(input_file='app/processing/vep/output.json'):
+
+def parse_vep_json(input_file=vep_output_file):
     '''
     Parse VEP json output (Docker output) into a DataFrame.
 
@@ -408,6 +417,7 @@ def parse_vep_json(input_file='app/processing/vep/output.json'):
 
     return vep_df
 
+
 def run_vep(variants, species, query=True):
     '''
     Runs VEP using help functions.
@@ -420,15 +430,11 @@ def run_vep(variants, species, query=True):
         DataFrame. VEP Output.
     '''
 
-    docker_input(variants)
+    vep_input(variants)
 
-    docker_vep(species, query=query)
+    apptainer_vep(species, query=query)
     
     vep_df = parse_vep_json()
-
-    print(vep_df)
-
-    vep_df.to_csv('app/testing_results/vep.csv', index=False)
 
     return vep_df
 
