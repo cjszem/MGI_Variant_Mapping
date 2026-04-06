@@ -137,11 +137,29 @@ def mvar_fetch(input_gene_df, assembly='GRCm39'):
     mouse_prt_df = process_mus_alleles(mouse_allele_df)
 
 
+    if mouse_prt_df.empty:
+        logging.info('No mouse alleles found.')
+        return mouse_gene_df, mouse_prt_df, pd.DataFrame(), gene_input_df
+
+
+    # Extract phenotypes
+    phenotype_df = allele_phenotype_match(mouse_allele_df)
+
+
     # Query MGD for ontology associations
-    doid_map = fetch_mus_doid(mouse_prt_df['AlleleID'].unique())
+    try:
+        doid_map = fetch_mus_doid(mouse_prt_df['AlleleID'].unique())
+    except:
+        logging.info('No Alleles found with disease associations.')
+        return mouse_gene_df, mouse_prt_df, phenotype_df, gene_input_df
 
     # Drop alleles without disease associations
     mouse_prt_df = mouse_prt_df[mouse_prt_df['AlleleID'].isin(doid_map.keys())]
+
+
+    if mouse_prt_df.empty:
+        logging.info('No disease associated mouse alleles found.')
+        return mouse_gene_df, mouse_prt_df, pd.DataFrame(), gene_input_df
 
 
     # Prepare common notation names
@@ -154,6 +172,7 @@ def mvar_fetch(input_gene_df, assembly='GRCm39'):
 
     # Clean VEP output
     mouse_prt_df = prepare_vep_output(variant_vep)
+
 
     # Drop transcripts not in homologous gene
     mouse_prt_df = mouse_prt_df[mouse_prt_df['Gene Symbol'].isin(genes)]
@@ -181,8 +200,6 @@ def mvar_fetch(input_gene_df, assembly='GRCm39'):
                                  'Codon Switch', 'Amino Acids', 'refAA', 'varAA', 'Associated Diseases', 'MONDO']]
     
 
-    # Extract phenotypes
-    phenotype_df = allele_phenotype_match(mouse_allele_df)
 
     # Replace all null with None
     mouse_gene_df = mouse_gene_df.where(pd.notnull(mouse_gene_df), None)
@@ -220,6 +237,12 @@ def hvar_query_score(hum_prt_df, mouse_prt_df, gene_inputs):
         pandas.DataFrame. contains score information for each variant-model pair.
     '''
     s = time.time()
+
+    if mouse_prt_df.empty or hum_prt_df.empty:
+        logging.info('No mouse alleles found.')
+        return pd.DataFrame()
+
+
     hum_prt_df['MONDO_set'] = hum_prt_df['MONDO'].apply(set)
     mouse_prt_df['MONDO_set'] = mouse_prt_df['MONDO'].apply(set)
 
@@ -330,6 +353,10 @@ def hvar_fetch(mouse_prt_df, input_mapping_df, assembly='GRCh38'):
     # Extract NCBI variants
     homologous_variants, phenotype_df = process_human_fetch(hum_gene_df, mouse_prt_df, gene_input_df)
 
+    if homologous_variants.empty:
+        logging.info('No homologous variants found.')
+        return hum_gene_df, pd.DataFrame(), pd.DataFrame(), gene_input_df
+
 
     # Query VEP for each variant
     variants, submission_HGVS_map = prepare_submission(homologous_variants)
@@ -380,6 +407,11 @@ def mvar_query_score(mouse_prt_df, hum_prt_df, gene_inputs):
         pandas.DataFrame. contains score information for each variant-model pair.
     '''
     s = time.time()
+
+    if mouse_prt_df.empty or hum_prt_df.empty:
+        logging.info('No homologous variants found.')
+        return pd.DataFrame()
+
 
     expanded_df = gene_inputs.merge(hum_prt_df, left_on='Hum Gene', right_on='Gene Symbol', suffixes=('', '_human'))
     expanded_df = expanded_df.merge(mouse_prt_df, left_on='Input Name', right_on='Name', suffixes=('', '_mouse'))

@@ -88,6 +88,18 @@ function renderTables(name, gene) {
         outputProteins = window.fullJSON.output_proteins.filter(row => row['Gene Symbol'] === homolog);
         scores = window.fullJSON.scores.filter(row => row['Input Name'] === name);
         phenotypes = window.fullJSON.phenotypes.filter(row => row['Gene Symbol'] === homolog);
+
+        // Sort output proteins and score dataframes
+        sortedScores = scores.sort((a, b) => (b['Total Score'] ?? 0) - (a['Total Score'] ?? 0));
+        const rank = new Map(sortedScores.map((row, index) => [`${row['AlleleID']}||${row['Transcript ID']}`, index]));
+
+        console.log(rank)
+
+        sortedOutputProteins = outputProteins.sort((a, b) =>
+            (rank.get(`${a['AlleleID']}||${a['Transcript ID']}`) ?? Infinity) -
+            (rank.get(`${b['AlleleID']}||${b['Transcript ID']}`) ?? Infinity)
+        );
+
     }
     else if (org === 'mouse') {
         queryGenes = window.fullJSON.query_genes.filter(row => row['Gene Symbol'] === gene);
@@ -98,7 +110,22 @@ function renderTables(name, gene) {
                                                                         && queryProteins.some(r => r.varAA === row.varAA));
         scores = window.fullJSON.scores.filter(row => row['Input Name'] === name);
         phenotypes = window.fullJSON.phenotypes.filter(row => outputProteins.some(r => r.Name === row.Name));
+
+        // Sort output proteins and score dataframes
+        sortedScores = scores.sort((a, b) => (b['Total Score'] ?? 0) - (a['Total Score'] ?? 0));
+        const rank = new Map(sortedScores.map((row, index) => [`${row['Name']}||${row['Transcript ID']}`, index]));
+
+        console.log(rank)
+
+        sortedOutputProteins = outputProteins.sort((a, b) =>
+            (rank.get(`${a['Name']}||${a['Transcript ID']}`) ?? Infinity) -
+            (rank.get(`${b['Name']}||${b['Transcript ID']}`) ?? Infinity)
+        );
     }
+
+
+
+
 
     // Create HTML tables
     results.innerHTML = `
@@ -119,12 +146,12 @@ function renderTables(name, gene) {
 
         <div class='tableWrapper'>
             <h2>${targetOrganism} Variants</h2>
-            ${jsonToHTMLTable(outputProteins, "outputVariantTable")}
+            ${jsonToHTMLTable(sortedOutputProteins, "outputVariantTable")}
         </div>
 
         <div class='tableWrapper'>
             <h2>Similarity Scores</h2>
-            ${jsonToHTMLTable(scores, "scoresTable")}
+            ${jsonToHTMLTable(sortedScores, "scoresTable")}
         </div>
 
 
