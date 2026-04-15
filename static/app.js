@@ -29,13 +29,13 @@ function buildSidebar(data) {
     sidebar.innerHTML = '<h3>Variant Inputs:</h3>';
 
     // Handle no results
-    if (!data.query_proteins || data.query_proteins.length === 0) {
+    if (!data.query_variants || data.query_variants.length === 0) {
         sidebar.innerHTML += '<h2>No inputs found.</h2>';
         return;
     }
 
     // Create sidebar buttons
-    data.query_proteins.forEach((row, idx) => {
+    data.query_variants.forEach((row, idx) => {
         const btn = document.createElement('button');
         btn.className = 'sidebar-button';
         btn.textContent = row['Name'];
@@ -54,7 +54,7 @@ function buildSidebar(data) {
     });
 
     // Unhide results
-    document.getElementById("layoutOutput").style.display = "flex";
+    document.getElementById('layoutOutput').style.display = 'flex';
 }
 
 
@@ -83,41 +83,45 @@ function renderTables(name, gene) {
     // Extract relevant tables
     if (org === 'human') {
         queryGenes = window.fullJSON.query_genes.filter(row => row['Gene Symbol'] === gene);
-        queryProteins = window.fullJSON.query_proteins.filter(row => row['Name'] === name);
+        queryProteins = window.fullJSON.query_variants.filter(row => row['Name'] === name);
         outputGenes = window.fullJSON.output_genes.filter(row => row['Gene Symbol'] === homolog);
-        outputProteins = window.fullJSON.output_proteins.filter(row => row['Gene Symbol'] === homolog);
+        outputProteins = window.fullJSON.output_variants.filter(row => row['Gene Symbol'] === homolog);
         scores = window.fullJSON.scores.filter(row => row['Input Name'] === name);
         phenotypes = window.fullJSON.phenotypes.filter(row => row['Gene Symbol'] === homolog);
 
         // Sort output proteins and score dataframes
-        sortedScores = scores.sort((a, b) => (b['Total Score'] ?? 0) - (a['Total Score'] ?? 0));
+        sortedScores = [...scores].sort((a, b) => (b['Total Score'] ?? 0) - (a['Total Score'] ?? 0));
         const rank = new Map(sortedScores.map((row, index) => [`${row['AlleleID']}||${row['Transcript ID']}`, index]));
 
         console.log(rank)
 
-        sortedOutputProteins = outputProteins.sort((a, b) =>
+        sortedOutputProteins = [...outputProteins].sort((a, b) =>
             (rank.get(`${a['AlleleID']}||${a['Transcript ID']}`) ?? Infinity) -
             (rank.get(`${b['AlleleID']}||${b['Transcript ID']}`) ?? Infinity)
         );
 
+        console.log(outputProteins)
+        console.log(sortedOutputProteins)
+
+
     }
     else if (org === 'mouse') {
         queryGenes = window.fullJSON.query_genes.filter(row => row['Gene Symbol'] === gene);
-        queryProteins = window.fullJSON.query_proteins.filter(row => row['Name'] === name);
+        queryProteins = window.fullJSON.query_variants.filter(row => row['Name'] === name);
         outputGenes = window.fullJSON.output_genes.filter(row => row['Gene Symbol'] === homolog);
-        outputProteins = window.fullJSON.output_proteins.filter(row => row['Gene Symbol'] === homolog 
+        outputProteins = window.fullJSON.output_variants.filter(row => row['Gene Symbol'] === homolog 
                                                                         && queryProteins.some(r => r.refAA === row.refAA)
                                                                         && queryProteins.some(r => r.varAA === row.varAA));
         scores = window.fullJSON.scores.filter(row => row['Input Name'] === name);
         phenotypes = window.fullJSON.phenotypes.filter(row => outputProteins.some(r => r.Name === row.Name));
 
         // Sort output proteins and score dataframes
-        sortedScores = scores.sort((a, b) => (b['Total Score'] ?? 0) - (a['Total Score'] ?? 0));
+        sortedScores = [...scores].sort((a, b) => (b['Total Score'] ?? 0) - (a['Total Score'] ?? 0));
         const rank = new Map(sortedScores.map((row, index) => [`${row['Name']}||${row['Transcript ID']}`, index]));
 
         console.log(rank)
 
-        sortedOutputProteins = outputProteins.sort((a, b) =>
+        sortedOutputProteins = [...outputProteins].sort((a, b) =>
             (rank.get(`${a['Name']}||${a['Transcript ID']}`) ?? Infinity) -
             (rank.get(`${b['Name']}||${b['Transcript ID']}`) ?? Infinity)
         );
@@ -176,19 +180,21 @@ function renderTables(name, gene) {
     // CREATE QUERY GENE DATATABLE ELEMENT
     $('#queryGenesTable').DataTable({
         dom: 't',
-        pageLength: 20
+        pageLength: 20,
+        ordering: false
         });
 
 
     // CREATE QUERY VARIANT DATATABLE ELEMENT
     const queryVariantTable = $('#queryVariantTable').DataTable({
         dom: 't',
-        pageLength: 20
+        pageLength: 20,
+        ordering: false
     });
 
     // Columns that are be hidden by default
     const queryHiddenCols = [
-                    'Input Name',
+                    'Name',
                     'Submission',
                     'Gene Symbol',
                     'refAA',
@@ -209,6 +215,7 @@ function renderTables(name, gene) {
     $('#outputGenesTable').DataTable({
         dom: 't',
         pageLength: 20,
+        ordering: false
     });
 
 
@@ -216,10 +223,12 @@ function renderTables(name, gene) {
     const outputVariantTable = $('#outputVariantTable').DataTable({
         dom: 'tp',
         pageLength: 20,
+        ordering: false
     });
 
     // Columns that are be hidden by default
     const outputHiddenCols = [
+                    'Submission',
                     'Input Name',
                     'Gene Symbol',
                     'refAA',
@@ -228,14 +237,11 @@ function renderTables(name, gene) {
 
     // Extra human-only columns to hide
     const outputHumanHidden = [
-                    'Submission',
                     'protein_start'
                 ];
 
     // Extra mouse-only columns to hide
     const outputMouseHidden = [
-                    'Allele ID',
-                    'AlleleSymbol',
                     'MONDO_set'
                 ];
 
@@ -250,7 +256,8 @@ function renderTables(name, gene) {
     // CREATE SCORE DATATABLE ELEMENT
     const scoreTable = $('#scoresTable').DataTable({
         dom: 'tp',
-        pageLength: 20
+        pageLength: 20,
+        ordering: false
     });
 
     // Columns that are be hidden by default
@@ -263,7 +270,8 @@ function renderTables(name, gene) {
     // CREATE PHENOTYPE DATATABLE ELEMENT
     $('#phenotypeTable').DataTable({
         dom: 'tp',
-        pageLength: 20
+        pageLength: 20,
+        ordering: false
     });
 
 
@@ -285,8 +293,6 @@ function jsonToHTMLTable(data, tableId) {
     });
 
     html += `</tr></thead><tbody>`;
-
-    console.log(tableId)
 
     data.forEach(row => {
         html += `<tr>`;

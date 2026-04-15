@@ -3,7 +3,6 @@ from pydantic import BaseModel
 from fastapi.responses import FileResponse, JSONResponse
 from fastapi.staticfiles import StaticFiles
 from fastapi.encoders import jsonable_encoder
-import pandas as pd
 
 from app.main_util import hvar_query, mvar_fetch, hvar_query_score, mvar_query, hvar_fetch, mvar_query_score
 from app.processing_util import process_batch_query
@@ -24,12 +23,9 @@ class VariantInput(BaseModel):
 def run_variants(data: VariantInput):
 
     print(data.variants)
-
     print(data.organism)
 
     variants = process_batch_query(data.variants)
-
-    variants.to_csv('test/variants.csv')
 
     if data.organism == 'human':
 
@@ -44,9 +40,9 @@ def run_variants(data: VariantInput):
         score_df = mvar_query_score(query_prt_df, output_prt_df, input_genes)
 
     results = {'query_genes': query_gene_df.to_dict(orient='records'),
-            'query_proteins': query_prt_df.to_dict(orient='records'),
+            'query_variants': query_prt_df.to_dict(orient='records'),
             'output_genes': output_gene_df.to_dict(orient='records'),
-            'output_proteins': output_prt_df.to_dict(orient='records'),
+            'output_variants': output_prt_df.to_dict(orient='records'),
             'scores': score_df.to_dict(orient='records'),
             'phenotypes': output_phenotype_df.to_dict(orient='records'),
             'gene_mapping': input_genes.to_dict(orient='records')}

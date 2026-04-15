@@ -2,9 +2,7 @@ import yaml
 import json
 import logging
 import pandas as pd
-from Bio import Entrez
 from cyvcf2 import VCF
-import xml.etree.ElementTree as ET
 
 
 # Load Config
@@ -26,110 +24,13 @@ mondo_xref_map = json.load(open(config['paths']['mondo_xref_map']))
 mondo_term_map = json.load(open(config['paths']['mondo_term_map']))
 
 
-def get_clinvar_ids(gene, start):
-    '''
-    Use Entrez to fetch ClinVar IDs for a given gene and location.
-
-    Parameters:
-        gene: string. Gene symbol to extract info for.
-        start: int. Genomic location of variant start.
-
-    Returns:
-        list of strings. The ClinVar IDs of variants at given location.
-    '''
-    # Log Request to ClinVar
-    logging.info(f'ClinVar ID Request: [Gene Name]={gene}, [Base Position]={start}')
-
-    try:
-        # Make request to ClinVar
-        handle = Entrez.esearch(db='clinvar', term=f'{gene}[Gene Name] AND {start}[Base Position]', retmax=500) 
-        record = Entrez.read(handle)
-        handle.close()
-
-        # Extract ClinVar IDs
-        clinvar_ids = record['IdList']
-    
-    # Handle Request Failure
-    except Exception as e:
-        logging.error(f'ClinVar Request Failed: {e}')
-        ValueError(f'ClinVar Request Failed: {e}')
-
-    return clinvar_ids
-
-
-def get_disease_associations(clinvar_id):
-    '''
-    Use Entrez to fetch disease associations for given ClinVar ID.
-
-    Parameters:
-        clinvar_id: string. Numerical ClinVar ID.
-
-    Returns:
-        tuple
-            prt_changes. list of strings. All reported protein changes associated with the variant 
-            consequence. string. The first molecular consequence term extracted from the record. Returns None if none found.
-            diseases. list of strings. A list of disease/condition names associated with the variant.
-    '''
-    # Log Request to ClinVar
-    logging.info(f'ClinVar ID Request: [ClinVar ID]={clinvar_id}')
-    
-    try:
-        # Fetch the VCV record from ClinVar
-        handle = Entrez.efetch(db='clinvar', rettype='vcv', id=clinvar_id, from_esearch=True)
-        xml_text = handle.read()
-        handle.close()
-
-        # Parse XML into an element tree
-        clinvar_root = ET.fromstring(xml_text)
-
-        # Extract all protein changes
-        prt_changes = []
-        for prt_section in clinvar_root.findall(".//ProteinChange"):
-            prt = prt_section.text
-            prt_changes.append(prt)
-
-        # Extract the first molecular consequence
-        for mol_cons in clinvar_root.findall(".//MolecularConsequence"):
-            try:
-                consequence = mol_cons.get("Type").replace(" ", "_")
-                break # Only take the first available consequence
-            except: 
-                continue
-
-        # Extract associated diseases
-        diseases = []
-        for rcv in clinvar_root.findall(".//RCVAccession"):
-
-            # If only want to retain associations of certain review status
-            # accepted_review_status = ['practice guideline', 'reviewed by expert panel', 'criteria provided, multiple submitters, no conflicts']
-            # review = rcv.find(".//ReviewStatus").text
-            # if review not in accepted_review_status:
-            #     continue
-
-            # Get disease
-            condition = rcv.find(".//ClassifiedCondition") 
-            disease = condition.text
-
-            # Get submission count
-            # germline_description = rcv.find(".//Description") 
-            # submissions = germline_description.get("SubmissionCount")
-
-            diseases.append(disease)
-    
-    # Handle Request Failure
-    except Exception as e:
-        logging.error(f'ClinVar Disease Request Failed: {e}')
-        ValueError(f'ClinVar Disease Request Failed: {e}')
-    
-    return prt_changes, consequence, diseases
-
 
 def assign_clinvar(variants):
     '''
     Fetch ClinVar disease associations for a list of variants.
 
     Parameters:
-        variants: DataFrame. Expects Name, Chromosome, STart, Stop, Ref, Alt.
+        variants: DataFrame. Expects Name, Chromosome, Start, Stop, Ref, Alt.
     
     Returns:
         DataFrame. Contains Name and CLINDISDB.

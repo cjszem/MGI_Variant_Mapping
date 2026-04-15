@@ -102,8 +102,6 @@ def parse_ncbi_variant_summary(summary_path, output_path):
 
     var = pd.read_csv(summary_path, sep='\t', usecols=cols)
 
-    print(var['Type'].value_counts())
-
     var_grch38 = var[(var['Assembly'] == 'GRCh38')] #  & (var['Type'] == 'single nucleotide variant')
 
     var_grch38.rename(columns={'#AlleleID': 'AlleleID'}, inplace=True)

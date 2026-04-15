@@ -211,10 +211,10 @@ def prepare_vep_output(vep_df):
 
 
     # Extract ref/varAA
-    aa = vep_df["amino_acids"].astype("string").str.strip().str.extract(r"^(?P<refAA>[A-Z\*])(?:/(?P<varAA>[A-Z\*]))?$")
+    aa = vep_df['amino_acids'].astype('string').str.strip().str.extract(r"^(?P<refAA>[A-Z\*])(?:/(?P<varAA>[A-Z\*]))?$")
 
-    vep_df["refAA"] = aa["refAA"]
-    vep_df["varAA"] = aa["varAA"]
+    vep_df['refAA'] = aa['refAA']
+    vep_df['varAA'] = aa['varAA']
 
     # Handle synoymous variants
     vep_df["varAA"] = vep_df["varAA"].fillna("=")

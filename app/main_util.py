@@ -195,7 +195,7 @@ def mvar_fetch(input_gene_df, assembly='GRCm39'):
 
 
     # Rearrange columns
-    mouse_prt_df = mouse_prt_df[['Gene Symbol', 'AlleleID', 'AlleleSymbol', 'Transcript ID', 'Biotype', 
+    mouse_prt_df = mouse_prt_df[['Submission', 'Gene Symbol', 'AlleleID', 'AlleleSymbol', 'Transcript ID', 'Biotype', 
                                  'Exon Rank', 'Pfam Domain ID', 'Molecular Consequence', 
                                  'Codon Switch', 'Amino Acids', 'refAA', 'varAA', 'Associated Diseases', 'MONDO']]
     
@@ -283,6 +283,7 @@ def hvar_query_score(hum_prt_df, mouse_prt_df, gene_inputs):
 def mvar_query(variants, assembly='GRCm39'):
     '''
     '''
+    s = time.time()
     # Check assembly
     if assembly != 'GRCm39':
         raise ValueError('Assembly must be GRCm39')
@@ -301,7 +302,6 @@ def mvar_query(variants, assembly='GRCm39'):
     # Assign input field
     vep_df['Name'] = vep_df['Submission'].map(submission_name_map)
 
-    vep_df.to_csv('app/testing_results/vep_output.csv', index=False)
 
     # Clean VEP output into protein DataFrame
     protein_df = prepare_vep_output(vep_df)
@@ -320,6 +320,7 @@ def mvar_query(variants, assembly='GRCm39'):
     gene_df = gene_df.where(pd.notnull(gene_df), None)
     protein_df = protein_df.where(pd.notnull(protein_df), None)
 
+
     # Save results
     gene_df.to_csv('app/results/mouse_gene_df.csv', index=False)
     protein_df.to_csv('app/results/mouse_protein_df.csv', index=False)
@@ -330,12 +331,17 @@ def mvar_query(variants, assembly='GRCm39'):
     # print(protein_df)
     # print('----------')
 
+    e = time.time()
+    print(f'Mouse Time: {e-s}')
+
     return gene_df, protein_df, input_gene_df
 
 
 def hvar_fetch(mouse_prt_df, input_mapping_df, assembly='GRCh38'):
     '''
     '''
+    s = time.time()
+
     # Check assembly
     if assembly != 'GRCh38':
         logging.info(f'Assembly Error: {assembly} is not supported. Only GRCh38 is supported.')
@@ -389,6 +395,11 @@ def hvar_fetch(mouse_prt_df, input_mapping_df, assembly='GRCh38'):
     # print('----------')
     # print(hum_protein_df)
     # print('----------')
+
+
+    e = time.time()
+
+    print(f'Human Time: {e-s}')
 
 
     return hum_gene_df, hum_protein_df, phenotype_df, gene_input_df
