@@ -301,11 +301,27 @@ function jsonToHTMLTable(data, tableId) {
 
             // Seperate Phenotypes into multiple lines
             if (col === 'Phenotypes' && Array.isArray(value)) {
-                value = value
-                    .map(v => String(v).trim())
-                    .filter(v => v.length)
-                    .join(`<br>`);
 
+                if  (org === 'human') {
+                    value = value
+                        .map(v => {
+                            const [id, label] = String(v).split(',').map(s => s.trim());
+                            const url = `https://www.informatics.jax.org/vocab/mp_ontology/${id}`;
+                            return `<a href="${url}" target="_blank" rel="noopener noreferrer">${id}: ${label}</a>`;
+                        })
+                        .filter(v => v.length)
+                        .join('<br>');
+                } else if (org === 'mouse') {
+                        value = value
+                        .map(v => {
+                            const [fullID, label] = String(v).split(',').map(s => s.trim());
+                            const [hp, id] = String(fullID).split(':').map(s => s.trim());
+                            const url = `http://purl.obolibrary.org/obo/HP_${id}`;
+                            return `<a href="${url}" target="_blank" rel="noopener noreferrer">${fullID}: ${label}</a>`;
+                        })
+                        .filter(v => v.length)
+                        .join('<br>');
+                }
             }
 
             // Add linking for alleles
