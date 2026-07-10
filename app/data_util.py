@@ -94,6 +94,12 @@ def parse_ensembl_gff3(gff3_path, species):
 
 def parse_ncbi_variant_summary(summary_path, output_path):
     '''
+    Parses NCBI TSV file as a source of all human variants and 
+    extracts relevation information and saves it as a csv.
+
+    Parameters:
+        summary_path. str. Path to TSV file.
+        output_path. str. Path to final, cleaned TSV file.
     '''
     cols = ['#AlleleID', 'Type', 'Name', 'GeneSymbol', 'HGNC_ID', 
         'ClinSigSimple', 'PhenotypeIDS', 'PhenotypeList', 

@@ -8,6 +8,9 @@ with open('app/config.yaml') as f:
 
 
 def refresh_mondo():
+    '''
+    Downloads the mondo OBO file and parse it to create a mapping of Mondo IDs to names.
+    '''
     url = config['data']['mondo_obo']
     output_path = config['paths']['mondo_term_map']
 
@@ -16,6 +19,9 @@ def refresh_mondo():
 
 
 def refresh_mgi():
+    '''
+    Downloads MGI data files.
+    '''
     download_file(config['data']['mgi_allele'])
     download_file(config['data']['mgi_homology'])
     download_file(config['data']['mgi_disease'])
@@ -23,6 +29,9 @@ def refresh_mgi():
 
 
 def refresh_clinvar():
+    '''
+    Downloads ClinVar files.
+    '''
     url_vcf = config['data']['clinvar_vcf']
     url_tbi = config['data']['clinvar_tbi']
     out_vcf = config['paths']['clinvar_vcf']
@@ -33,6 +42,10 @@ def refresh_clinvar():
 
 
 def refresh_ensembl():
+    '''
+    Downloads Ensembl GFF3 files.
+    * Note that VEP Caches are not included here.
+    '''
     url_hum = config['data']['ensembl_hum_gff3']
     url_mus = config['data']['ensembl_mus_gff3']
     out_hum = config['paths']['ensembl_hum_gff3']
@@ -46,6 +59,9 @@ def refresh_ensembl():
 
 
 def refresh_ncbi():
+    '''
+    Download and parse NCBI variant summary.
+    '''
     url = config['data']['ncbi_var_summary']
     output_path = config['paths']['ncbi_var_summary']
 
@@ -58,7 +74,14 @@ def refresh_ncbi():
     
 
 def refresh_data():
+    '''
+    Refreshes all data with updated downloads. Both downloads and parses all data sources.
+    '''
     refresh_mondo()
     refresh_mgi()
     refresh_clinvar()
     refresh_ensembl()
+
+
+if __name__ == '__main__':
+    refresh_data()
