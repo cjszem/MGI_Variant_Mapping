@@ -12,103 +12,150 @@ Genome sequencing has become increasingly prevalent in clinical and research set
 
 ## Instructions
 ### Prerequisites
-1. macOS
-    VarLift has been created for macOS, but could easily be adapted for personal on Linux by removing the Apptainer call from the vep command.
-2. Homebrew
-3. Conda
+1. macOS: VarLift has been created for macOS, but could easily be adapted for personal on Linux by removing the Apptainer call from the vep command.
 
-### Local Web App Setup
-To run the server locally follow the steps below:
+2. Homebrew: Used to download Lima
+
+3. Conda: Used for package, dependency, and environment management.
+
+### Tool Setup
 1. Clone the repository and navigate to the project directory.
-```
-git clone https://github.com/cjszem/MGI_Variant_Mapping # clone repo
-cd MGI_Variant_Mapping # navigate to project
-```
+
+    ```
+    git clone https://github.com/cjszem/MGI_Variant_Mapping # clone repo
+    cd MGI_Variant_Mapping # navigate to project
+    ```
 
 2. Download Lima and create an Apptainer Linux virtual machine  to run ensembl-vep.
-```
-brew install lima # install lima with homebrew
-limactl start template:apptainer # create an Apptainer VM
-```
+
+    ```
+    brew install lima # install lima with homebrew
+    limactl start template:apptainer # create an Apptainer VM
+    ```
 
 3. Create a Ensembl VEP image inside the apptainer VM.
 
     VarLift uses Ensembl VEP, which requires a Linux environment to be run. Lima provides the Linux environment and Apptainer creates teh containerized image where vep can be run.
-```
-limactl shell apptainer # enter the VM
-apptainer build ensembl-vep.sif docker://ensemblorg/ensembl-vep # build a VEP image
-```
+
+    ```
+    limactl shell apptainer # enter the VM
+    apptainer build ensembl-vep.sif docker://ensemblorg/ensembl-vep # build a VEP image
+    ```
 
 4. Download VEP caches inside vep directory.
-```
-mkdir -p /app/vep/vep_cache # create cache directory
-apptainer exec --bind /main:/main/app/vep /main/ensembl-vep.sif vep_install -a cf -s homo_sapiens --DESTDIR /main/vep_cache # download human cache
-apptainer exec --bind /main:/main/app/vep /main/ensembl-vep.sif vep_install -a cf -s mus_musculus --DESTDIR /main/vep_cache # download mouse cache
-```
+
+    ```
+    mkdir -p /app/vep/vep_cache # create cache directory
+    apptainer exec --bind /main:/main/app/vep /main/ensembl-vep.sif vep_install -a cf -s homo_sapiens --DESTDIR /main/vep_cache # download human cache
+    apptainer exec --bind /main:/main/app/vep /main/ensembl-vep.sif vep_install -a cf -s mus_musculus --DESTDIR /main/vep_cache # download mouse cache
+    ```
 
 5. Create the conda environment using the provided yml file. All remaining steps occur within this environment.
-```
-conda env create -f environment.yml # create conda env
-conda activate VarLift # activate conda env
-```
+
+    ```
+    conda env create -f environment.yml # create conda env
+    conda activate VarLift # activate conda env
+    ```
 
 6. Download all data files.
-```
-python data_refresh.py
-```
 
-7. Run the server using uvicorn.
-```
-uvicorn server:app
-```
+    ```
+    python data_refresh.py
+    ```
 
-8. Open the webpage at `http://127.0.0.1:8000` in your browser.
+### Local Web App Setup
 
-9. Insert a list of variants into the search field and submit the query.
+To use the web app locally follow the steps below:
 
+1. Run the server using uvicorn.
+
+    ```
+    uvicorn server:app
+    ```
+
+2. Open the webpage at `http://127.0.0.1:8000` in your browser.
+
+3. Insert a list of variants into the search field and submit the query.
+
+
+### Local Python Use
+
+Create new a python file for your use.
+
+1. Import processing function from `app/processing_util.py`. Import query and fetch functions from `app/main_util.py`.
+
+    ```
+    from app.processing_util import prepare_submission
+    from app.main_util import hvar_query, mvar_fetch, hvar_query_score, mvar_query, hvar_fetch, mvar_query_score
+    ```
+
+2. Prepare variant formatting for pipeline.
+   
+    ```
+    imput = '2:157774114-157774114:C/T\n1:39468726-39468726:T/G''
+    variants = prepare_submission(input)
+    ```
+
+3. Submit variants to the pipeline.
+
+    ```
+    query_gene_df, query_prt_df, input_genes = hvar_query(variants)
+    output_gene_df, output_prt_df, output_phenotype_df, input_genes = mvar_fetch(input_genes)
+    score_df = hvar_query_score(query_prt_df, output_prt_df, input_genes)
+    ```
 
 ## Output
 
 1. Input gene table: Provides information on the given variant on a gene level.
-```
-Gene Symbol Description Biotype Chromosome  Start	End	Strand	Ensembl_ID	Accession
-ACVR1 activin A receptor type 1	protein_coding	2	157736249	157876347	-	ENSG00000115170	HGNC:171
-```
+
+    ```
+    Gene Symbol Description Biotype Chromosome  Start	End	Strand	Ensembl_ID	Accession
+    ACVR1 activin A receptor type 1	protein_coding	2	157736249	157876347	-	ENSG00000115170	HGNC:171
+    ```
 
 2. Input variant table: Provides information on the given variant on a transcript level.
-```
-Gene Symbol	Transcript ID	Biotype	Exon Rank	Pfam Domain ID	Pfam Domain Name	Polyphen Prediction	Polyphen Score	Molecular Consequence	Codon Switch	Amino Acids	Associated Diseases	MONDO
-ACVR1	ENST00000434821	protein_coding	6/11	PF08515	Transforming growth factor beta type I GS-motif	probably_damaging	0.999	missense_variant	cGc/cAc	R206H	fibrodysplasia ossificans progressiva MONDO:0007606
-```
+
+    ```
+    Gene Symbol	Transcript ID	Biotype	Exon Rank	Pfam Domain ID	Pfam Domain Name	Polyphen Prediction	Polyphen Score	Molecular Consequence	Codon Switch	Amino Acids	Associated Diseases	MONDO
+    ACVR1	ENST00000434821	protein_coding	6/11	PF08515	Transforming growth factor beta type I GS-motif	probably_damaging	0.999	missense_variant	cGc/cAc	R206H	fibrodysplasia ossificans progressiva MONDO:0007606
+    ```
+
 3. Output gene table: Provides information on the given orthologous variant on a gene level.
-```
-Gene Symbol	Description	Biotype	Chromosome	Start	End	Strand	Ensembl_ID	Accession
-Acvr1	activin A receptor%2C type 1	protein_coding	2	58278656	58457169	-	ENSMUSG00000026836	MGI:87911
-```
+
+    ```
+    Gene Symbol	Description	Biotype	Chromosome	Start	End	Strand	Ensembl_ID	Accession
+    Acvr1	activin A receptor%2C type 1	protein_coding	2	58278656	58457169	-	ENSMUSG00000026836	MGI:87911
+    ```
+
 4. Output variant table: Provides information on the given orthologous variant on a transcript level.
-```
-Gene Symbol	AlleleID	AlleleSymbol	Transcript ID	Biotype	Exon Rank	Pfam Domain ID	Pfam Domain Name	Molecular Consequence	Codon Switch	Amino Acids	Associated Diseases	MONDO
-Acvr1	MGI:6140231	Acvr1tm1Glh	ENSMUST00000056376	protein_coding	6/11	PF08515	Transforming growth factor beta type I GS-motif	missense_variant	cGC/cAT	R206H	fibrodysplasia ossificans progressiva	MONDO:0007606
-Acvr1	MGI:6140231	Acvr1tm1Glh	ENSMUST00000090935	protein_coding	8/13	PF08515	Transforming growth factor beta type I GS-motif	missense_variant	cGC/cAT	R206H	fibrodysplasia ossificans progressiva	MONDO:0007606
-Acvr1	MGI:6140231	Acvr1tm1Glh	ENSMUST00000112599	protein_coding	5/10	PF08515	Transforming growth factor beta type I GS-motif	missense_variant	cGC/cAT	R206H	fibrodysplasia ossificans progressiva	MONDO:0007606
-Acvr1	MGI:6140231	Acvr1tm1Glh	ENSMUST00000112601	protein_coding	7/12	PF08515	Transforming growth factor beta type I GS-motif	missense_variant	cGC/cAT	R206H	fibrodysplasia ossificans progressiva	MONDO:0007606
-...
-```
+
+    ```
+    Gene Symbol	AlleleID	AlleleSymbol	Transcript ID	Biotype	Exon Rank	Pfam Domain ID	Pfam Domain Name	Molecular Consequence	Codon Switch	Amino Acids	Associated Diseases	MONDO
+    Acvr1	MGI:6140231	Acvr1tm1Glh	ENSMUST00000056376	protein_coding	6/11	PF08515	Transforming growth factor beta type I GS-motif	missense_variant	cGC/cAT	R206H	fibrodysplasia ossificans progressiva	MONDO:0007606
+    Acvr1	MGI:6140231	Acvr1tm1Glh	ENSMUST00000090935	protein_coding	8/13	PF08515	Transforming growth factor beta type I GS-motif	missense_variant	cGC/cAT	R206H	fibrodysplasia ossificans progressiva	MONDO:0007606
+    Acvr1	MGI:6140231	Acvr1tm1Glh	ENSMUST00000112599	protein_coding	5/10	PF08515	Transforming growth factor beta type I GS-motif	missense_variant	cGC/cAT	R206H	fibrodysplasia ossificans progressiva	MONDO:0007606
+    Acvr1	MGI:6140231	Acvr1tm1Glh	ENSMUST00000112601	protein_coding	7/12	PF08515	Transforming growth factor beta type I GS-motif	missense_variant	cGC/cAT	R206H	fibrodysplasia ossificans progressiva	MONDO:0007606
+    ...
+    ```
+
 5. Output score table: Boolean match values for each mouse transcript
-```
-Allele ID	Allele Symbol	Transcript ID	Biotype Match	Consequence Match	AA Match	AA Position Match	Exon Match	Domain Match	Disease Match	total_score
-MGI:6140231	Acvr1tm1Glh	ENSMUST00000056376	true	true	true	true	true	true	true	100
-MGI:6140231	Acvr1tm1Glh	ENSMUST00000090935	true	true	true	true	false	true	true	85
-MGI:6140231	Acvr1tm1Glh	ENSMUST00000112599	true	true	true	true	false	true	true	85
-MGI:6140231	Acvr1tm1Glh	ENSMUST00000112601	true	true	true	true	false	true	true	85
-...
-```
+
+    ```
+    Allele ID	Allele Symbol	Transcript ID	Biotype Match	Consequence Match	AA Match	AA Position Match	Exon Match	Domain Match	Disease Match	total_score
+    MGI:6140231	Acvr1tm1Glh	ENSMUST00000056376	true	true	true	true	true	true	true	100
+    MGI:6140231	Acvr1tm1Glh	ENSMUST00000090935	true	true	true	true	false	true	true	85
+    MGI:6140231	Acvr1tm1Glh	ENSMUST00000112599	true	true	true	true	false	true	true	85
+    MGI:6140231	Acvr1tm1Glh	ENSMUST00000112601	true	true	true	true	false	true	true	85
+    ...
+    ```
+
 6. Output phenotype table: Provides detailed phenotype information on all alleles in gene.
-```
-Gene Symbol	AlleleID	AlleleSymbol	Allele Symbol	Phenotypes
-Acvr1	MGI:6140231	Acvr1tm1Glh	Acvr1	MP:0005390,skeleton phenotype
-Acvr1	MGI:1857711	Acvr1tm1Enl	Acvr1	MP:0001672,abnormal embryo development,MP:0001675,abnormal ectoderm development,MP:0001683,absent mesoderm,MP:0001695,abnormal gastrulation,MP:0001698,decreased embryo size,MP:0001710,absent amniotic folds,MP:0002230,abnormal primitive streak formation,MP:0003087,absent allantois,MP:0005030,absent amnion,MP:0009593,absent chorion,MP:0011098,embryonic lethality during organogenesis, complete penetrance,MP:0011186,abnormal visceral endoderm morphology,MP:0011190,thick embryonic epiblast
-...
-```
+
+    ```
+    Gene Symbol	AlleleID	AlleleSymbol	Allele Symbol	Phenotypes
+    Acvr1	MGI:6140231	Acvr1tm1Glh	Acvr1	MP:0005390,skeleton phenotype
+    Acvr1	MGI:1857711	Acvr1tm1Enl	Acvr1	MP:0001672,abnormal embryo development,MP:0001675,abnormal ectoderm development,MP:0001683,absent mesoderm,MP:0001695,abnormal gastrulation,MP:0001698,decreased embryo size,MP:0001710,absent amniotic folds,MP:0002230,abnormal primitive streak formation,MP:0003087,absent allantois,MP:0005030,absent amnion,MP:0009593,absent chorion,MP:0011098,embryonic lethality during organogenesis, complete penetrance,MP:0011186,abnormal visceral endoderm morphology,MP:0011190,thick embryonic epiblast
+    ...
+    ```
 
 All outputs are temporarily written to corresponding CSV files in the app/results directory. They are downloadable as a complete JSON on the web app.

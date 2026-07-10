@@ -57,10 +57,8 @@ def prepare_submission(variants):
     Returns:
         tuple. list of strings and dictionary. HGVS notations (chrom:g.startRef>Alt) and mapping of HGVS to names.
     '''
-    print(variants)
-    variants['Submission'] = (variants['Chromosome'].astype(str) + '\t' + variants['Start'].astype(str) + '\t.\t' + variants['Ref'] + '\t' + variants['Alt'])
 
-    print(variants)
+    variants['Submission'] = (variants['Chromosome'].astype(str) + '\t' + variants['Start'].astype(str) + '\t.\t' + variants['Ref'] + '\t' + variants['Alt'])
 
     try: submission_HGVS_map = dict(zip(variants['Submission'], variants['Name']))
 
