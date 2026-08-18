@@ -4,6 +4,7 @@ import yaml
 import obonet
 import requests
 import pandas as pd
+from pathlib import Path
 
 
 # Load Config
@@ -28,6 +29,8 @@ def download_file(input_url, output_path):
         output_path: str. File to save URL to.
     '''
     try:
+        Path(output_path).parent.mkdir(parents=True, exist_ok=True)
+        
         with requests.get(input_url, stream=True) as r:
             r.raise_for_status()
             with open(output_path, 'wb') as f:

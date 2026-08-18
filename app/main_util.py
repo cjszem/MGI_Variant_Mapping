@@ -9,6 +9,7 @@ import time
 import yaml
 import logging
 import pandas as pd
+from pathlib import Path
 
 # Load config
 with open('app/config.yaml') as f:
@@ -77,6 +78,8 @@ def hvar_query(variants, assembly='GRCh38'):
     gene_df = gene_df.where(pd.notnull(gene_df), None)
     protein_df = protein_df.where(pd.notnull(protein_df), None)
 
+    # Save results
+    Path("app/results").mkdir(parents=True, exist_ok=True)
     gene_df.to_csv('app/results/hum_gene_df.csv', index=False)
     protein_df.to_csv('app/results/hum_protein_df.csv', index=False)
 
@@ -322,6 +325,7 @@ def mvar_query(variants, assembly='GRCm39'):
 
 
     # Save results
+    Path("app/results").mkdir(parents=True, exist_ok=True)
     gene_df.to_csv('app/results/mouse_gene_df.csv', index=False)
     protein_df.to_csv('app/results/mouse_protein_df.csv', index=False)
 

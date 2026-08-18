@@ -22,10 +22,10 @@ def refresh_mgi():
     '''
     Downloads MGI data files.
     '''
-    download_file(config['data']['mgi_allele'])
-    download_file(config['data']['mgi_homology'])
-    download_file(config['data']['mgi_disease'])
-    download_file(config['data']['mgi_phenotype'])
+    download_file(config['data']['mgi_alleles'], config['paths']['mgi_alleles_gz'])
+    download_file(config['data']['mgi_homology'], config['paths']['mgi_homolog4y'])
+    download_file(config['data']['mgi_disease'], config['paths']['mgi_disease'])
+    download_file(config['data']['mgi_phenotype'], config['paths']['mgi_phenotype'])
 
 
 def refresh_clinvar():
@@ -46,10 +46,12 @@ def refresh_ensembl():
     Downloads Ensembl GFF3 files.
     * Note that VEP Caches are not included here.
     '''
-    url_hum = config['data']['ensembl_hum_gff3']
-    url_mus = config['data']['ensembl_mus_gff3']
-    out_hum = config['paths']['ensembl_hum_gff3']
-    out_mus = config['paths']['ensembl_mus_gff3']
+    version = config['data']['ensemble_version']
+
+    url_hum = config['data']['ensembl_hum_gff3'].format(ensemble_version=version)
+    url_mus = config['data']['ensembl_mus_gff3'].format(ensemble_version=version)
+    out_hum = config['paths']['ensembl_hum_gff3'].format(ensemble_version=version)
+    out_mus = config['paths']['ensembl_mus_gff3'].format(ensemble_version=version)
 
     download_file(url_hum, out_hum)
     download_file(url_mus, out_mus)
@@ -81,6 +83,7 @@ def refresh_data():
     refresh_mgi()
     refresh_clinvar()
     refresh_ensembl()
+    refresh_ncbi()
 
 
 if __name__ == '__main__':

@@ -21,7 +21,7 @@ homology_df = pd.read_csv(config['paths']['mgi_homology'],
                                            'Mus_HGNC_ID', 'HumGeneSymbol', 'HumEntrezGeneID'])
 
 # Load Mus alleles
-mus_alleles_df = pd.read_csv(config['paths']['mgi_alleles'], sep='\t')
+mus_alleles_df = pd.read_csv(config['paths']['mgi_alleles'], sep='\t', compression='gzip', low_memory=False, comment='#')
 
 
 def get_gene_info(gene, species='human'):

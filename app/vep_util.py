@@ -5,6 +5,8 @@ import numpy as np
 import pandas as pd
 import subprocess
 import json
+from pathlib import Path
+
 
 # Load Config
 with open('app/config.yaml') as f:
@@ -86,6 +88,8 @@ def vep_input(variants):
     unique_variants = variants.drop_duplicates(subset='Submission')
 
     print(unique_variants)
+
+    Path(vep_input_file).parent.mkdir(parents=True, exist_ok=True)
 
     with open(vep_input_file, 'w') as f:
         # VCF meta-information

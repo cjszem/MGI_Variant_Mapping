@@ -22,8 +22,8 @@ Genome sequencing has become increasingly prevalent in clinical and research set
 1. Clone the repository and navigate to the project directory.
 
     ```
-    git clone https://github.com/cjszem/MGI_Variant_Mapping # clone repo
-    cd MGI_Variant_Mapping # navigate to project
+    git clone https://github.com/cjszem/VarLift # clone repo
+    cd VarLift # navigate to project
     ```
 
 2. Download Lima and create an Apptainer Linux virtual machine  to run ensembl-vep.
@@ -60,7 +60,7 @@ Genome sequencing has become increasingly prevalent in clinical and research set
 6. Download all data files.
 
     ```
-    python data_refresh.py
+    python app/data_refresh.py
     ```
 
 ### Local Web App Setup
