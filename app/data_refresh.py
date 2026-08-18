@@ -22,8 +22,8 @@ def refresh_mgi():
     '''
     Downloads MGI data files.
     '''
-    download_file(config['data']['mgi_alleles'], config['paths']['mgi_alleles_gz'])
-    download_file(config['data']['mgi_homology'], config['paths']['mgi_homolog4y'])
+    download_file(config['data']['mgi_alleles'], config['paths']['mgi_alleles'])
+    download_file(config['data']['mgi_homology'], config['paths']['mgi_homology'])
     download_file(config['data']['mgi_disease'], config['paths']['mgi_disease'])
     download_file(config['data']['mgi_phenotype'], config['paths']['mgi_phenotype'])
 

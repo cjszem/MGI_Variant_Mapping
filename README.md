@@ -45,7 +45,7 @@ Genome sequencing has become increasingly prevalent in clinical and research set
 4. Download VEP caches inside vep directory.
 
     ```
-    mkdir -p /app/vep/vep_cache # create cache directory
+    mkdir -p app/vep/vep_cache # create cache directory
     apptainer exec --bind /main:/main/app/vep /main/ensembl-vep.sif vep_install -a cf -s homo_sapiens --DESTDIR /main/vep_cache # download human cache
     apptainer exec --bind /main:/main/app/vep /main/ensembl-vep.sif vep_install -a cf -s mus_musculus --DESTDIR /main/vep_cache # download mouse cache
     ```
