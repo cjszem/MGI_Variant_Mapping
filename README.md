@@ -26,28 +26,46 @@ Genome sequencing has become increasingly prevalent in clinical and research set
     cd VarLift # navigate to project
     ```
 
-2. Download Lima and create an Apptainer Linux virtual machine  to run ensembl-vep.
+2. Download Lima and create an Apptainer Linux virtual machine to run ensembl-vep.
 
     ```
     brew install lima # install lima with homebrew
     limactl start template:apptainer # create an Apptainer VM
+    exit # leave limactl shell if inside
+
+    limactl stop apptainer # stop instance
+    limactl edit apptainer # edit apptainer configuration - Replace mount section.
     ```
+
+    The mount section should read:
+    ```yaml
+    mounts:
+    - location: "~/VarLift" # Should be absolute path to your VarLift directory
+      mountPoint: "/varlift"
+      writable: true
+    ```
+
+    Restart terminal to ensure the change has taken effect.
 
 3. Create a Ensembl VEP image inside the apptainer VM.
 
     VarLift uses Ensembl VEP, which requires a Linux environment to be run. Lima provides the Linux environment and Apptainer creates teh containerized image where vep can be run.
 
     ```
+    limactl start apptainer # start apptainer instance
     limactl shell apptainer # enter the VM
+    cd VarLift # go to repo directory if it is not already working directory
     apptainer build ensembl-vep.sif docker://ensemblorg/ensembl-vep # build a VEP image
     ```
 
-4. Download VEP caches inside vep directory.
+4. Download VEP caches inside vep directory (remain inside of apptainer instance).
 
     ```
     mkdir -p app/vep/vep_cache # create cache directory
-    apptainer exec --bind /main:/main/app/vep /main/ensembl-vep.sif vep_install -a cf -s homo_sapiens --DESTDIR /main/vep_cache # download human cache
-    apptainer exec --bind /main:/main/app/vep /main/ensembl-vep.sif vep_install -a cf -s mus_musculus --DESTDIR /main/vep_cache # download mouse cache
+
+    apptainer exec --bind /varlift:/varlift ensembl-vep.sif perl /opt/vep/src/ensembl-vep/INSTALL.pl -a cf -s homo_sapiens --CACHEDIR /varlift/app/vep/vep_cache --DESTDIR /varlift/app/vep/vep_cache --ASSEMBLY GRCh38 # download human cache
+
+    apptainer exec --bind /varlift:/varlift ensembl-vep.sif   perl /opt/vep/src/ensembl-vep/INSTALL.pl -a cf -s mus_musculus --CACHEDIR /varlift/app/vep/vep_cache --DESTDIR /varlift/app/vep/vep_cache --ASSEMBLY GRCm39 # download mouse cache
     ```
 
 5. Create the conda environment using the provided yml file. All remaining steps occur within this environment.
